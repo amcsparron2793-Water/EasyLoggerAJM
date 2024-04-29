@@ -12,7 +12,7 @@ from os.path import join, isdir
 
 class EasyLogger:
     def __init__(self, project_name=None, root_log_location="../logs",
-                 chosen_format='%(asctime)s | %(name)s | %(levelname)s | %(message)s', logger=None):
+                 chosen_format='%(asctime)s | %(name)s | %(levelname)s | %(message)s', logger=None, **kwargs):
 
         self._project_name = project_name
         self._root_log_location = root_log_location
