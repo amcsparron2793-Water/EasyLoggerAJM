@@ -19,7 +19,14 @@ class EasyLogger:
         self._inner_log_fstructure = None
         self._log_location = None
 
-        self.timestamp = datetime.now().isoformat(timespec='minutes').replace(':',
+        if kwargs:
+            if 'timestamp' in kwargs and (isinstance(kwargs['timestamp'], datetime)
+                                          or isinstance(kwargs['timestamp'], str)):
+                self.timestamp = kwargs['timestamp']
+            else:
+                raise AttributeError("timestamp must be a datetime object or a string")
+        else:
+            self.timestamp = datetime.now().isoformat(timespec='minutes').replace(':',
                                                                               '')  # datetime.now().date().isoformat()
         self.formatter = logging.Formatter(chosen_format)
         self.logger_levels = ["DEBUG", "INFO", "ERROR"]
