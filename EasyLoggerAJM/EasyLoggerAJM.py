@@ -9,6 +9,7 @@ from datetime import datetime
 from os import makedirs
 from os.path import join, isdir
 
+
 class ConsoleOneTimeFilter(logging.Filter):
     def __init__(self, name="ConsoleWarnOneTime"):
         super().__init__(name)
@@ -20,7 +21,6 @@ class ConsoleOneTimeFilter(logging.Filter):
             self.logged_messages.add(record.msg)
             return True
         return False
-
 
 
 class EasyLogger:
@@ -86,7 +86,6 @@ class EasyLogger:
         self._inner_log_fstructure = None
         self._log_location = None
         self.show_warning_logs_in_console = kwargs.get('show_warning_logs_in_console', False)
-
 
         self.timestamp = self.set_timestamp(**kwargs)
 
