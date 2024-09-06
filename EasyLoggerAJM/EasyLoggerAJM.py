@@ -9,6 +9,19 @@ from datetime import datetime
 from os import makedirs
 from os.path import join, isdir
 
+class ConsoleOneTimeFilter(logging.Filter):
+    def __init__(self, name="ConsoleWarnOneTime"):
+        super().__init__(name)
+        self.logged_messages = set()
+
+    def filter(self, record):
+        # We only log the message if it has not been logged before
+        if record.msg not in self.logged_messages:
+            self.logged_messages.add(record.msg)
+            return True
+        return False
+
+
 
 class EasyLogger:
     """
@@ -56,6 +69,15 @@ class EasyLogger:
         logger.logger.error("This is an error message")
     """
     DEFAULT_FORMAT = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
+
+    LOGGER_LEVELS = {
+        10: 'DEBUG',
+        20: 'INFO',
+        30: 'WARNING',
+        40: 'ERROR',
+        50: 'CRITICAL'
+    }
+
     def __init__(self, project_name=None, root_log_location="../logs",
                  chosen_format=DEFAULT_FORMAT, logger=None, **kwargs):
 
@@ -63,6 +85,7 @@ class EasyLogger:
         self._root_log_location = root_log_location
         self._inner_log_fstructure = None
         self._log_location = None
+        self.show_warning_logs_in_console = kwargs.get('show_warning_logs_in_console', False)
 
 
         self.timestamp = self.set_timestamp(**kwargs)
@@ -72,7 +95,7 @@ class EasyLogger:
             self.timestamp = datetime.now().isoformat(timespec='hours').split('T')[0]
 
         self.formatter = logging.Formatter(chosen_format)
-        self.logger_levels = ["DEBUG", "INFO", "ERROR"]
+        self.file_logger_levels = ["DEBUG", "INFO", "ERROR"]
         if not logger:
             # Create a logger with a specified name and make sure propagate is True
             self.logger = logging.getLogger('logger')
@@ -81,6 +104,8 @@ class EasyLogger:
         self.logger.propagate = True
 
         self.make_file_handlers()
+        if self.show_warning_logs_in_console:
+            self.create_stream_handler()
 
         # set the logger level back to DEBUG, so it handles all messages
         self.logger.setLevel(10)
@@ -249,7 +274,9 @@ class EasyLogger:
 
     def make_file_handlers(self):
         """
-        This method is used to create file handlers for the logger. It sets the logging level for each handler based on the logger_levels attribute. It also sets the log file location based on the logger level, project name, and timestamp.
+        This method is used to create file handlers for the logger.
+        It sets the logging level for each handler based on the file_logger_levels attribute.
+        It also sets the log file location based on the logger level, project name, and timestamp.
 
         Parameters:
             None
@@ -260,17 +287,10 @@ class EasyLogger:
         Raises:
             None
         """
-        for lvl in self.logger_levels:
+        for lvl in self.file_logger_levels:
             self.logger.setLevel(lvl)
-            if self.logger.level == 10:
-                level_string = "DEBUG"
-            elif self.logger.level == 20:
-                level_string = "INFO"
-            elif self.logger.level == 40:
-                level_string = "ERROR"
-            else:
-                print("other logger level detected, defaulting to DEBUG")
-                level_string = "DEBUG"
+            level_string = self.LOGGER_LEVELS[self.logger.level]
+
             log_path = join(self.log_location, '{}-{}-{}.log'.format(level_string, self.project_name, self.timestamp))
 
             # Create a file handler for the logger, and specify the log file location
@@ -280,3 +300,42 @@ class EasyLogger:
             file_handler.setLevel(self.logger.level)
             # Add the file handlers to the loggers
             self.logger.addHandler(file_handler)
+
+    def create_stream_handler(self, log_level_to_stream="WARNING", **kwargs):
+        """
+        Creates and configures a StreamHandler for warning messages to print to the console.
+
+        This method creates a StreamHandler and sets its logging format.
+        The StreamHandler is then set to handle only warning level log messages.
+
+        A one-time filter is added to the StreamHandler to ensure that warning messages are only printed to the console once.
+
+        Finally, the StreamHandler is added to the logger.
+
+        Note: This method assumes that `self.logger` and `self.formatter` are already defined.
+        """
+
+        if log_level_to_stream not in self.LOGGER_LEVELS.keys() and log_level_to_stream not in self.LOGGER_LEVELS.values():
+            raise ValueError(f"log_level_to_stream must be one of {list(self.LOGGER_LEVELS.keys())} or "
+                             f"{list(self.LOGGER_LEVELS.values())}, "
+                             f"not {log_level_to_stream}")
+
+        self.logger.info(f"creating StreamHandler() for {log_level_to_stream} messages to print to console")
+
+        use_one_time_filter = kwargs.get('use_one_time_filter', True)
+
+        # Create a stream handler for the logger
+        stream_handler = logging.StreamHandler()
+        # Set the logging format for the stream handler
+        stream_handler.setFormatter(self.formatter)
+        stream_handler.setLevel(log_level_to_stream)
+        if use_one_time_filter:
+            # set the one time filter, so that log_level_to_stream messages will only be printed to the console once.
+            one_time_filter = ConsoleOneTimeFilter()
+            stream_handler.addFilter(one_time_filter)
+
+        # Add the stream handler to logger
+        self.logger.addHandler(stream_handler)
+        self.logger.info(f"StreamHandler() for {log_level_to_stream} messages added. {log_level_to_stream}s will be printed to console")
+        if use_one_time_filter:
+            self.logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
