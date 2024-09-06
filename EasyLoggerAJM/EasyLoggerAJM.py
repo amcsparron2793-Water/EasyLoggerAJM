@@ -289,15 +289,8 @@ class EasyLogger:
         """
         for lvl in self.file_logger_levels:
             self.logger.setLevel(lvl)
-            if self.logger.level == 10:
-                level_string = "DEBUG"
-            elif self.logger.level == 20:
-                level_string = "INFO"
-            elif self.logger.level == 40:
-                level_string = "ERROR"
-            else:
-                print("other logger level detected, defaulting to DEBUG")
-                level_string = "DEBUG"
+            level_string = self.LOGGER_LEVELS[self.logger.level]
+
             log_path = join(self.log_location, '{}-{}-{}.log'.format(level_string, self.project_name, self.timestamp))
 
             # Create a file handler for the logger, and specify the log file location
@@ -321,7 +314,14 @@ class EasyLogger:
 
         Note: This method assumes that `self.logger` and `self.formatter` are already defined.
         """
+
+        if log_level_to_stream not in self.LOGGER_LEVELS.keys() and log_level_to_stream not in self.LOGGER_LEVELS.values():
+            raise ValueError(f"log_level_to_stream must be one of {list(self.LOGGER_LEVELS.keys())} or "
+                             f"{list(self.LOGGER_LEVELS.values())}, "
+                             f"not {log_level_to_stream}")
+
         self.logger.info(f"creating StreamHandler() for {log_level_to_stream} messages to print to console")
+
         use_one_time_filter = kwargs.get('use_one_time_filter', True)
 
         # Create a stream handler for the logger
