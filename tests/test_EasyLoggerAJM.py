@@ -1,7 +1,5 @@
 import unittest
 import re
-from datetime import datetime
-from os.path import dirname
 
 from EasyLoggerAJM.EasyLoggerAJM import EasyLogger
 
@@ -41,6 +39,7 @@ class TestEasyLogger(unittest.TestCase):
     def test_make_file_handlers(self):
         self.logger.make_file_handlers()
         self.assertIsNotNone(self.logger.logger.handlers)
+        self.assertGreaterEqual(len(self.logger.logger.handlers), len(self.logger.file_logger_levels))
 
 
 if __name__ == "__main__":

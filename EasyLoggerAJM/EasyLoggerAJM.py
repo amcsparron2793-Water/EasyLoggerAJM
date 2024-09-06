@@ -78,6 +78,21 @@ class EasyLogger:
         50: 'CRITICAL'
     }
 
+    INT_TO_STR_LOGGER_LEVELS = {
+        10: 'DEBUG',
+        20: 'INFO',
+        30: 'WARNING',
+        40: 'ERROR',
+        50: 'CRITICAL'
+    }
+    STR_TO_INT_LOGGER_LEVELS = {
+        'DEBUG': 10,
+        'INFO': 20,
+        'WARNING': 30,
+        'ERROR': 40,
+        'CRITICAL': 50
+    }
+
     def __init__(self, project_name=None, root_log_location="../logs",
                  chosen_format=DEFAULT_FORMAT, logger=None, **kwargs):
 
