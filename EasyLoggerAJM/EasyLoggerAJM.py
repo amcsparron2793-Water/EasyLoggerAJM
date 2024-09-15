@@ -125,7 +125,8 @@ class EasyLogger:
     @classmethod
     def UseLogger(cls, **kwargs):
         """
-        This method is a class method that can be used to instantiate a class with a logger. It takes in keyword arguments and returns an instance of the class with the specified logger.
+        This method is a class method that can be used to instantiate a class with a logger.
+        It takes in keyword arguments and returns an instance of the class with the specified logger.
 
         Parameters:
         - **kwargs: Keyword arguments that are used to instantiate the class.
@@ -147,10 +148,15 @@ class EasyLogger:
             if [x for x in self._file_logger_levels
                 if x in self.STR_TO_INT_LOGGER_LEVELS
                    or x in self.INT_TO_STR_LOGGER_LEVELS]:
-                pass
-                # TODO: normalize to level?
+                #pass
+                if any([isinstance(x, str) and not x.isdigit() for x in self._file_logger_levels]):
+                    self._file_logger_levels = [self.STR_TO_INT_LOGGER_LEVELS[x] for x in self._file_logger_levels]
+                elif any([isinstance(x, int) for x in self._file_logger_levels]):
+                    pass
         else:
-            self._file_logger_levels = ["DEBUG", "INFO", "ERROR"]
+            self._file_logger_levels = [self.STR_TO_INT_LOGGER_LEVELS["DEBUG"],
+                                        self.STR_TO_INT_LOGGER_LEVELS["INFO"],
+                                        self.STR_TO_INT_LOGGER_LEVELS["ERROR"]]
         return self._file_logger_levels
 
     @property
