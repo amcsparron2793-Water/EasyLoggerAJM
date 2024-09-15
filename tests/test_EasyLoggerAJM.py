@@ -42,6 +42,14 @@ class TestEasyLogger(unittest.TestCase):
         self.logger.make_file_handlers()
         self.assertIsNotNone(self.logger.logger.handlers)
 
+    def test_is_daily_log_spec(self):
+        dls_logger = EasyLogger(project_name="TestProject3",
+                                root_log_location=f"{self.test_dir}3",
+                                is_daily_log_spec=True)
+        dls_logger.make_file_handlers()
+        self.assertEqual(dls_logger.inner_log_fstructure, dls_logger.DAILY_LOG_SPEC_FORMAT)
+
+
 
 if __name__ == "__main__":
     unittest.main()

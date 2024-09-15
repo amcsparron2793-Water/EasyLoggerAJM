@@ -77,9 +77,20 @@ class EasyLogger:
         40: 'ERROR',
         50: 'CRITICAL'
     }
+    # this is a tuple of the date and the time down to the minute
+    MINUTE_LOG_SPEC_FORMAT = (datetime.now().date().isoformat(),
+                              ''.join(datetime.now().time().isoformat().split('.')[0].split(":")[:-1]))
+
+    HOUR_LOG_SPEC_FORMAT = datetime.now().date().isoformat(), (
+                datetime.now().time().isoformat().split('.')[0].split(':')[0] + '00')
+
+    DAILY_LOG_SPEC_FORMAT = datetime.now().date().isoformat()
+
 
     def __init__(self, project_name=None, root_log_location="../logs",
                  chosen_format=DEFAULT_FORMAT, logger=None, **kwargs):
+
+        # TODO: add hour log spec, make _log_spec a property
 
         self._project_name = project_name
         self._root_log_location = root_log_location
@@ -90,6 +101,7 @@ class EasyLogger:
         self.timestamp = self.set_timestamp(**kwargs)
 
         self._is_daily_log_spec = kwargs.get('is_daily_log_spec', False)
+        # TODO: change this so that it changes based on time_spec
         if self._is_daily_log_spec:
             self.timestamp = datetime.now().isoformat(timespec='hours').split('T')[0]
 
@@ -198,12 +210,10 @@ class EasyLogger:
             print(file_structure)  # Output: '2022-01-01' or '2022-01-01/12:30'
         """
         if self._is_daily_log_spec:
-            self._inner_log_fstructure = "{}".format(datetime.now().date().isoformat())
+            self._inner_log_fstructure = "{}".format(self.DAILY_LOG_SPEC_FORMAT)
         else:
-            self._inner_log_fstructure = "{}/{}".format(datetime.now().date().isoformat(),
-                                                        ''.join(
-                                                            datetime.now().time().isoformat().split(
-                                                                '.')[0].split(":")[:-1]))
+            self._inner_log_fstructure = "{}/{}".format(self.MINUTE_LOG_SPEC_FORMAT[0],
+                                                        self.MINUTE_LOG_SPEC_FORMAT[1])
         return self._inner_log_fstructure
 
     @property
