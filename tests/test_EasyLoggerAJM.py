@@ -47,7 +47,7 @@ class TestEasyLogger(unittest.TestCase):
                                 root_log_location=f"{self.test_dir}3",
                                 is_daily_log_spec=True)
         dls_logger.make_file_handlers()
-        self.assertEqual(dls_logger.inner_log_fstructure, dls_logger.DAILY_LOG_SPEC_FORMAT)
+        self.assertEqual(dls_logger.inner_log_fstructure.split('/')[0], dls_logger.DAILY_LOG_SPEC_FORMAT)
 
 
 

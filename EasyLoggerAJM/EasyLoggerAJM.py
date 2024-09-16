@@ -80,17 +80,40 @@ class EasyLogger:
     # this is a tuple of the date and the time down to the minute
     MINUTE_LOG_SPEC_FORMAT = (datetime.now().date().isoformat(),
                               ''.join(datetime.now().time().isoformat().split('.')[0].split(":")[:-1]))
+    MINUTE_TIMESTAMP = datetime.now().isoformat(timespec='minutes').replace(':', '')
 
     HOUR_LOG_SPEC_FORMAT = datetime.now().date().isoformat(), (
                 datetime.now().time().isoformat().split('.')[0].split(':')[0] + '00')
+    HOUR_TIMESTAMP = datetime.now().time().isoformat().split('.')[0].split(':')[0] + '00'
 
     DAILY_LOG_SPEC_FORMAT = datetime.now().date().isoformat()
+    DAILY_TIMESTAMP = datetime.now().isoformat(timespec='hours').split('T')[0]
+
+
+    LOG_SPECS = {
+        'daily': {
+            'name': 'daily',
+            'format': DAILY_LOG_SPEC_FORMAT,
+            'timestamp': DAILY_TIMESTAMP
+        },
+        'hourly': {
+            'name': 'hourly',
+            'format': HOUR_LOG_SPEC_FORMAT,
+            'timestamp': HOUR_TIMESTAMP
+        },
+        'minute': {
+            'name': 'minute',
+            'format': MINUTE_LOG_SPEC_FORMAT,
+            'timestamp': MINUTE_TIMESTAMP
+        }
+    }
 
 
     def __init__(self, project_name=None, root_log_location="../logs",
                  chosen_format=DEFAULT_FORMAT, logger=None, **kwargs):
 
-        # TODO: add hour log spec, make _log_spec a property
+        # TODO: make _log_spec a property
+        self._log_spec = kwargs.get('log_spec', None)
 
         self._project_name = project_name
         self._root_log_location = root_log_location
@@ -98,12 +121,9 @@ class EasyLogger:
         self._log_location = None
         self.show_warning_logs_in_console = kwargs.get('show_warning_logs_in_console', False)
 
-        self.timestamp = self.set_timestamp(**kwargs)
-
-        self._is_daily_log_spec = kwargs.get('is_daily_log_spec', False)
-        # TODO: change this so that it changes based on time_spec
-        if self._is_daily_log_spec:
-            self.timestamp = datetime.now().isoformat(timespec='hours').split('T')[0]
+        self.timestamp = kwargs.get('timestamp', self.log_spec['timestamp'])
+        if self.timestamp != self.log_spec['timestamp']:
+            self.timestamp = self.set_timestamp(** {'timestamp': self.timestamp})
 
         self.formatter = logging.Formatter(chosen_format)
         self.file_logger_levels = ["DEBUG", "INFO", "ERROR"]
@@ -194,26 +214,19 @@ class EasyLogger:
     @inner_log_fstructure.getter
     def inner_log_fstructure(self):
         """
-        This code defines a getter method `inner_log_fstructure` for a class. The method returns a string representing the inner log file structure based on the current date and time.
+        Getter method for retrieving the inner log format structure.
 
-        The method first checks if the `_is_daily_log_spec` attribute of the class instance is `True`. If it is, the `_inner_log_fstructure` attribute is set to the current date in the ISO format.
+        This method checks the type of the log_spec['format'] attribute and returns the inner log format structure accordingly.
+        If the log_spec['format'] is of type str, the inner log format structure is set as "{}".format(self.log_spec['format']).
+        If the log_spec['format'] is of type tuple, the inner log format structure is set as "{}/{}".format(self.log_spec['format'][0], self.log_spec['format'][1]).
 
-        If `_is_daily_log_spec` is `False`, the `_inner_log_fstructure` attribute is set to a string concatenation of the current date in the ISO format and the current time without milliseconds and seconds, separated by a forward slash.
-
-        Finally, the method returns the `_inner_log_fstructure` attribute.
-
-        No input parameters are required for this getter method.
-
-        Example usage:
-            obj = MyClass()
-            file_structure = obj.inner_log_fstructure()
-            print(file_structure)  # Output: '2022-01-01' or '2022-01-01/12:30'
+        Returns:
+            str: The inner log format structure.
         """
-        if self._is_daily_log_spec:
-            self._inner_log_fstructure = "{}".format(self.DAILY_LOG_SPEC_FORMAT)
-        else:
-            self._inner_log_fstructure = "{}/{}".format(self.MINUTE_LOG_SPEC_FORMAT[0],
-                                                        self.MINUTE_LOG_SPEC_FORMAT[1])
+        if isinstance(self.log_spec['format'], str):
+            self._inner_log_fstructure = "{}".format(self.log_spec['format'])
+        elif isinstance(self.log_spec['format'], tuple):
+            self._inner_log_fstructure = "{}/{}".format(self.log_spec['format'][0], self.log_spec['format'][1])
         return self._inner_log_fstructure
 
     @property
@@ -245,6 +258,17 @@ class EasyLogger:
         else:
             makedirs(self._log_location)
         return self._log_location
+
+    @property
+    def log_spec(self):
+        if self._log_spec is not None:
+            if self._log_spec['name'] in list(self.LOG_SPECS.keys()):
+                self._log_spec = self.LOG_SPECS[self._log_spec['name']]
+            else:
+                raise AttributeError(f"log spec must be one of the following: {str(list(self.LOG_SPECS.keys()))[1:-1]}.")
+        else:
+            self._log_spec = self.LOG_SPECS['minute']
+        return self._log_spec
 
     @staticmethod
     def set_timestamp(** kwargs):
