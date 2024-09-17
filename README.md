@@ -7,6 +7,7 @@ EasyLoggerAJM is a Python logging library designed to facilitate flexible and ef
 - **Console Warning Stream Handler**: Logs warning messages to the console with a filter to ensure each warning is shown only once.
 - **Configurable Log Levels**: Easy configuration of log levels through a dictionary.
 - **Daily Log Specification**: Option to split logs by day instead of by run.
+- **Hourly Log Specification**: Option to split logs by hour.
 - **Enhanced Error Handling**: Improved handling for invalid `log_level_to_stream` values.
 - **Comprehensive Unit Tests**: Ensures robustness and correctness of the logging functionalities.
 
@@ -72,6 +73,14 @@ To contribute to the project, follow these steps:
     ```
 
 ## Recent Changes
+
+### Version 1.2
+
+- **Refactor Log Specifications and Timestamps Handling**: Introduced a comprehensive `LOG_SPECS` dictionary and updated the `inner_log_fstructure` method, simplifying the format checking logic within getter definitions.
+- **Hourly Log Specification**: Added the ability to split logs by hour.
+- **Refactor Log Spec Format Handling**: Introduced predefined constants for better readability and maintainability.
+- **Logger Levels Normalization**: Revised the normalization of logger levels, converting string levels to integer values.
+- **Property for File Logger Levels**: Introduced a property for `file_logger_levels` to allow setting levels dynamically via kwargs.
 
 ### Version 1.1
 

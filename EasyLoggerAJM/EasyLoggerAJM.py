@@ -77,7 +77,7 @@ class EasyLogger:
         40: 'ERROR',
         50: 'CRITICAL'
     }
-    
+
     STR_TO_INT_LOGGER_LEVELS = {
         'DEBUG': 10,
         'INFO': 20,
@@ -85,20 +85,18 @@ class EasyLogger:
         'ERROR': 40,
         'CRITICAL': 50
     }
-    
-    
+
     # this is a tuple of the date and the time down to the minute
     MINUTE_LOG_SPEC_FORMAT = (datetime.now().date().isoformat(),
                               ''.join(datetime.now().time().isoformat().split('.')[0].split(":")[:-1]))
     MINUTE_TIMESTAMP = datetime.now().isoformat(timespec='minutes').replace(':', '')
 
     HOUR_LOG_SPEC_FORMAT = datetime.now().date().isoformat(), (
-                datetime.now().time().isoformat().split('.')[0].split(':')[0] + '00')
+            datetime.now().time().isoformat().split('.')[0].split(':')[0] + '00')
     HOUR_TIMESTAMP = datetime.now().time().isoformat().split('.')[0].split(':')[0] + '00'
 
     DAILY_LOG_SPEC_FORMAT = datetime.now().date().isoformat()
     DAILY_TIMESTAMP = datetime.now().isoformat(timespec='hours').split('T')[0]
-
 
     LOG_SPECS = {
         'daily': {
@@ -121,7 +119,6 @@ class EasyLogger:
     def __init__(self, project_name=None, root_log_location="../logs",
                  chosen_format=DEFAULT_FORMAT, logger=None, **kwargs):
 
-        # TODO: make _log_spec a property
         self._log_spec = kwargs.get('log_spec', None)
 
         self._project_name = project_name
@@ -132,7 +129,7 @@ class EasyLogger:
 
         self.timestamp = kwargs.get('timestamp', self.log_spec['timestamp'])
         if self.timestamp != self.log_spec['timestamp']:
-            self.timestamp = self.set_timestamp(** {'timestamp': self.timestamp})
+            self.timestamp = self.set_timestamp(**{'timestamp': self.timestamp})
 
         self.formatter = logging.Formatter(chosen_format)
         self._file_logger_levels = kwargs.get('file_logger_levels', [])
@@ -293,13 +290,14 @@ class EasyLogger:
             if self._log_spec['name'] in list(self.LOG_SPECS.keys()):
                 self._log_spec = self.LOG_SPECS[self._log_spec['name']]
             else:
-                raise AttributeError(f"log spec must be one of the following: {str(list(self.LOG_SPECS.keys()))[1:-1]}.")
+                raise AttributeError(
+                    f"log spec must be one of the following: {str(list(self.LOG_SPECS.keys()))[1:-1]}.")
         else:
             self._log_spec = self.LOG_SPECS['minute']
         return self._log_spec
 
     @staticmethod
-    def set_timestamp(** kwargs):
+    def set_timestamp(**kwargs):
         """
         This method, `set_timestamp`, is a static method that can be used to set a timestamp for logging purposes. The method takes in keyword arguments as parameters.
 
@@ -397,6 +395,8 @@ class EasyLogger:
 
         # Add the stream handler to logger
         self.logger.addHandler(stream_handler)
-        self.logger.info(f"StreamHandler() for {log_level_to_stream} messages added. {log_level_to_stream}s will be printed to console")
+        self.logger.info(
+            f"StreamHandler() for {log_level_to_stream} messages added. "
+            f"{log_level_to_stream}s will be printed to console")
         if use_one_time_filter:
             self.logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
