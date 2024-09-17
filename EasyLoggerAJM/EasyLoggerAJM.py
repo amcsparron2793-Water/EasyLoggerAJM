@@ -70,12 +70,19 @@ class EasyLogger:
     """
     DEFAULT_FORMAT = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
 
-    LOGGER_LEVELS = {
+    INT_TO_STR_LOGGER_LEVELS = {
         10: 'DEBUG',
         20: 'INFO',
         30: 'WARNING',
         40: 'ERROR',
         50: 'CRITICAL'
+    }
+    STR_TO_INT_LOGGER_LEVELS = {
+        'DEBUG': 10,
+        'INFO': 20,
+        'WARNING': 30,
+        'ERROR': 40,
+        'CRITICAL': 50
     }
 
     def __init__(self, project_name=None, root_log_location="../logs",
@@ -94,7 +101,8 @@ class EasyLogger:
             self.timestamp = datetime.now().isoformat(timespec='hours').split('T')[0]
 
         self.formatter = logging.Formatter(chosen_format)
-        self.file_logger_levels = ["DEBUG", "INFO", "ERROR"]
+        self._file_logger_levels = kwargs.get('file_logger_levels', [])
+
         if not logger:
             # Create a logger with a specified name and make sure propagate is True
             self.logger = logging.getLogger('logger')
@@ -117,7 +125,8 @@ class EasyLogger:
     @classmethod
     def UseLogger(cls, **kwargs):
         """
-        This method is a class method that can be used to instantiate a class with a logger. It takes in keyword arguments and returns an instance of the class with the specified logger.
+        This method is a class method that can be used to instantiate a class with a logger.
+        It takes in keyword arguments and returns an instance of the class with the specified logger.
 
         Parameters:
         - **kwargs: Keyword arguments that are used to instantiate the class.
@@ -132,6 +141,23 @@ class EasyLogger:
             The logger used for instantiation is obtained from the `logging` module and is named 'logger'.
         """
         return cls(**kwargs, logger=logging.getLogger('logger'))
+
+    @property
+    def file_logger_levels(self):
+        if self._file_logger_levels:
+            if [x for x in self._file_logger_levels
+                if x in self.STR_TO_INT_LOGGER_LEVELS
+                   or x in self.INT_TO_STR_LOGGER_LEVELS]:
+                #pass
+                if any([isinstance(x, str) and not x.isdigit() for x in self._file_logger_levels]):
+                    self._file_logger_levels = [self.STR_TO_INT_LOGGER_LEVELS[x] for x in self._file_logger_levels]
+                elif any([isinstance(x, int) for x in self._file_logger_levels]):
+                    pass
+        else:
+            self._file_logger_levels = [self.STR_TO_INT_LOGGER_LEVELS["DEBUG"],
+                                        self.STR_TO_INT_LOGGER_LEVELS["INFO"],
+                                        self.STR_TO_INT_LOGGER_LEVELS["ERROR"]]
+        return self._file_logger_levels
 
     @property
     def project_name(self):
@@ -288,7 +314,7 @@ class EasyLogger:
         """
         for lvl in self.file_logger_levels:
             self.logger.setLevel(lvl)
-            level_string = self.LOGGER_LEVELS[self.logger.level]
+            level_string = self.INT_TO_STR_LOGGER_LEVELS[self.logger.level]
 
             log_path = join(self.log_location, '{}-{}-{}.log'.format(level_string, self.project_name, self.timestamp))
 
@@ -314,9 +340,9 @@ class EasyLogger:
         Note: This method assumes that `self.logger` and `self.formatter` are already defined.
         """
 
-        if log_level_to_stream not in self.LOGGER_LEVELS.keys() and log_level_to_stream not in self.LOGGER_LEVELS.values():
-            raise ValueError(f"log_level_to_stream must be one of {list(self.LOGGER_LEVELS.keys())} or "
-                             f"{list(self.LOGGER_LEVELS.values())}, "
+        if log_level_to_stream not in self.INT_TO_STR_LOGGER_LEVELS and log_level_to_stream not in self.STR_TO_INT_LOGGER_LEVELS:
+            raise ValueError(f"log_level_to_stream must be one of {list(self.STR_TO_INT_LOGGER_LEVELS)} or "
+                             f"{list(self.INT_TO_STR_LOGGER_LEVELS)}, "
                              f"not {log_level_to_stream}")
 
         self.logger.info(f"creating StreamHandler() for {log_level_to_stream} messages to print to console")

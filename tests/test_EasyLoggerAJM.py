@@ -1,7 +1,5 @@
 import unittest
 import re
-from datetime import datetime
-from os.path import dirname
 
 from EasyLoggerAJM.EasyLoggerAJM import EasyLogger
 
@@ -41,6 +39,16 @@ class TestEasyLogger(unittest.TestCase):
     def test_make_file_handlers(self):
         self.logger.make_file_handlers()
         self.assertIsNotNone(self.logger.logger.handlers)
+        self.assertGreaterEqual(len(self.logger.logger.handlers), len(self.logger.file_logger_levels))
+
+    def test_logger_level_normalization_with_kwargs(self):
+        self.logger = EasyLogger(project_name="TestProject", root_log_location="./test_logs", file_logger_levels=['DEBUG', 'INFO','WARNING', 'ERROR'])
+        self.logger.make_file_handlers()
+        for x in self.logger.file_logger_levels:
+            self.assertIn(x, [x.level for x in self.logger.logger.handlers])
+            self.assertIsInstance(x, int)
+
+
 
 
 if __name__ == "__main__":
