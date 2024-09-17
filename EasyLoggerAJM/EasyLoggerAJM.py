@@ -287,8 +287,19 @@ class EasyLogger:
     @property
     def log_spec(self):
         if self._log_spec is not None:
-            if self._log_spec['name'] in list(self.LOG_SPECS.keys()):
-                self._log_spec = self.LOG_SPECS[self._log_spec['name']]
+            if isinstance(self._log_spec, dict):
+                try:
+                    self._log_spec = self._log_spec['name']
+                except KeyError:
+                    raise KeyError("if log_spec is given as a dictionary, "
+                                   "it must include the key/value for 'name'."
+                                   " otherwise it should be passed in as a string.") from None
+
+            elif isinstance(self._log_spec, str):
+                pass
+
+            if self._log_spec in list(self.LOG_SPECS.keys()):
+                self._log_spec = self.LOG_SPECS[self._log_spec]
             else:
                 raise AttributeError(
                     f"log spec must be one of the following: {str(list(self.LOG_SPECS.keys()))[1:-1]}.")

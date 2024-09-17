@@ -1,5 +1,6 @@
 import unittest
 import re
+from datetime import datetime
 
 from EasyLoggerAJM.EasyLoggerAJM import EasyLogger
 
@@ -13,7 +14,6 @@ class TestEasyLogger(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         print("DONT FORGET TO REMOVE TEST DIRS")
-
 
     def test_creation(self):
         self.assertIsInstance(self.logger, EasyLogger)
@@ -48,14 +48,34 @@ class TestEasyLogger(unittest.TestCase):
             self.assertIn(x, [x.level for x in self.logger.logger.handlers])
             self.assertIsInstance(x, int)
 
-
-
     def test_is_daily_log_spec(self):
         dls_logger = EasyLogger(project_name="TestProject3",
                                 root_log_location=f"{self.test_dir}3",
                                 is_daily_log_spec=True)
         dls_logger.make_file_handlers()
         self.assertEqual(dls_logger.inner_log_fstructure.split('/')[0], dls_logger.DAILY_LOG_SPEC_FORMAT)
+
+    def test_given_dictionary_when_getting_log_spec_then_return_value(self):
+        self.logger._log_spec = {'name': 'minute'}
+        self.assertEqual(self.logger.log_spec, self.logger.LOG_SPECS['minute'])
+
+    def test_given_incorrect_key_dictionary_when_getting_log_spec_then_raise_exception(self):
+        self.logger._log_spec = {'wrong_key': 'minute'}
+        with self.assertRaises(KeyError):
+            self.logger.log_spec
+
+    def test_given_string_when_getting_log_spec_then_return_value(self):
+        self.logger._log_spec = 'minute'
+        self.assertEqual(self.logger.log_spec, self.logger.LOG_SPECS['minute'])
+
+    def test_given_wrong_string_when_getting_log_spec_then_raise_exception(self):
+        self.logger._log_spec = 'wrong_string'
+        with self.assertRaises(AttributeError):
+            self.logger.log_spec
+
+    def test_given_none_when_getting_log_spec_then_return_default_value(self):
+        self.logger._log_spec = None
+        self.assertEqual(self.logger.log_spec, self.logger.LOG_SPECS['minute'])
 
 
 
