@@ -73,10 +73,17 @@ class TestEasyLogger(unittest.TestCase):
         with self.assertRaises(AttributeError):
             self.logger.log_spec
 
+    def test_given_wrong_case_string_when_getting_log_spec_then_make_lowercase(self):
+        self.logger._log_spec = 'Minute'
+        self.assertTrue(self.logger.log_spec['name'].islower())
+
+    def test_given_wrong_case_string_in_dict_when_getting_log_spec_then_make_lowercase(self):
+        self.logger._log_spec = {'name': 'Minute'}
+        self.assertTrue(self.logger.log_spec['name'].islower())
+
     def test_given_none_when_getting_log_spec_then_return_default_value(self):
         self.logger._log_spec = None
         self.assertEqual(self.logger.log_spec, self.logger.LOG_SPECS['minute'])
-
 
 
 if __name__ == "__main__":

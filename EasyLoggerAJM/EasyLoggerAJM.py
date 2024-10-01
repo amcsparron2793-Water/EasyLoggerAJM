@@ -298,8 +298,8 @@ class EasyLogger:
             elif isinstance(self._log_spec, str):
                 pass
 
-            if self._log_spec in list(self.LOG_SPECS.keys()):
-                # since all the keys are in lower case, the passed in self._log_spec should be set to .lower()
+            # since all the keys are in lower case, the passed in self._log_spec should be set to .lower()
+            if self._log_spec.lower() in list(self.LOG_SPECS.keys()):
                 self._log_spec = self.LOG_SPECS[self._log_spec.lower()]
             else:
                 raise AttributeError(
