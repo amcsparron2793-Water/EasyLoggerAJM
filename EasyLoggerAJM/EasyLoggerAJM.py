@@ -299,7 +299,8 @@ class EasyLogger:
                 pass
 
             if self._log_spec in list(self.LOG_SPECS.keys()):
-                self._log_spec = self.LOG_SPECS[self._log_spec]
+                # since all the keys are in lower case, the passed in self._log_spec should be set to .lower()
+                self._log_spec = self.LOG_SPECS[self._log_spec.lower()]
             else:
                 raise AttributeError(
                     f"log spec must be one of the following: {str(list(self.LOG_SPECS.keys()))[1:-1]}.")
