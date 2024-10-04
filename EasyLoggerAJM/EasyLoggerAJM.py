@@ -23,6 +23,53 @@ class ConsoleOneTimeFilter(logging.Filter):
         return False
 
 
+class _EasyLoggerCustomLogger(logging.Logger):
+    @staticmethod
+    def _print_msg(msg, **kwargs):
+        if kwargs.get('print_msg', False):
+            print(msg)
+
+    def info(self, msg: object, *args: object, exc_info=None,
+             stack_info: bool = False, stacklevel: int = 1,
+             extra=None, **kwargs):
+        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
+        super().info(msg, *args, exc_info=exc_info,
+                     stack_info=stack_info, stacklevel=stacklevel,
+                     extra=extra)
+
+    def warning(self, msg: object, *args: object, exc_info=None,
+                stack_info: bool = False, stacklevel: int = 1,
+                extra=None, **kwargs):
+        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
+        super().warning(msg, *args, exc_info=exc_info,
+                        stack_info=stack_info, stacklevel=stacklevel,
+                        extra=extra)
+
+    def error(self, msg: object, *args: object, exc_info=None,
+              stack_info: bool = False, stacklevel: int = 1,
+              extra=None, **kwargs):
+        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
+        super().error(msg, *args, exc_info=exc_info,
+                      stack_info=stack_info, stacklevel=stacklevel,
+                      extra=extra)
+
+    def debug(self, msg: object, *args: object, exc_info=None,
+              stack_info: bool = False, stacklevel: int = 1,
+              extra=None, **kwargs):
+        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
+        super().debug(msg, *args, exc_info=exc_info,
+                      stack_info=stack_info, stacklevel=stacklevel,
+                      extra=extra)
+
+    def critical(self, msg: object, *args: object, exc_info=None,
+                 stack_info: bool = False, stacklevel: int = 1,
+                 extra=None, **kwargs):
+        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
+        super().critical(msg, *args, exc_info=exc_info,
+                         stack_info=stack_info, stacklevel=stacklevel,
+                         extra=extra)
+
+
 class EasyLogger:
     """
     This module provides the EasyLogger class, which is a simple logging utility for Python.
@@ -135,6 +182,7 @@ class EasyLogger:
         self._file_logger_levels = kwargs.get('file_logger_levels', [])
 
         if not logger:
+            logging.setLoggerClass(_EasyLoggerCustomLogger)
             # Create a logger with a specified name and make sure propagate is True
             self.logger = logging.getLogger('logger')
         else:
@@ -179,7 +227,6 @@ class EasyLogger:
             if [x for x in self._file_logger_levels
                 if x in self.STR_TO_INT_LOGGER_LEVELS
                    or x in self.INT_TO_STR_LOGGER_LEVELS]:
-                #pass
                 if any([isinstance(x, str) and not x.isdigit() for x in self._file_logger_levels]):
                     self._file_logger_levels = [self.STR_TO_INT_LOGGER_LEVELS[x] for x in self._file_logger_levels]
                 elif any([isinstance(x, int) for x in self._file_logger_levels]):
@@ -412,3 +459,7 @@ class EasyLogger:
             f"{log_level_to_stream}s will be printed to console")
         if use_one_time_filter:
             self.logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
+
+
+# TODO: Tests/doc updates
+
