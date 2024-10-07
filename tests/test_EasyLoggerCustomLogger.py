@@ -13,30 +13,30 @@ class TestEasyLoggerCustomLogger(unittest.TestCase):
             'error': self.logger.error,
             'critical': self.logger.critical
         }
+        self.should_print = True
+
+    def _iter_subtests(self, mock_print):
+        for level, method in self.log_methods.items():
+            with self.subTest(level=level):
+                with patch.object(_EasyLoggerCustomLogger, '_print_msg',
+                                  wraps=_EasyLoggerCustomLogger._print_msg) as mock_print_msg:
+                    method("Test message", print_msg=self.should_print)
+                    mock_print_msg.assert_called_once_with("Test message", print_msg=self.should_print)
+                    if not self.should_print:
+                        mock_print.assert_not_called()
+                    else:
+                        mock_print.assert_called_once_with("Test message")
+                    mock_print.reset_mock()
 
     @patch('builtins.print')
     def test_print_msg_for_all_log_levels(self, mock_print):
-        should_print = True
-        for level, method in self.log_methods.items():
-            with self.subTest(level=level):
-                with patch.object(_EasyLoggerCustomLogger, '_print_msg',
-                                  wraps=_EasyLoggerCustomLogger._print_msg) as mock_print_msg:
-                    method("Test message", print_msg=should_print)
-                    mock_print_msg.assert_called_once_with("Test message", print_msg=should_print)
-                    mock_print.assert_called_once_with("Test message")
-                    mock_print.reset_mock()
+        self.should_print = True
+        self._iter_subtests(mock_print)
 
     @patch('builtins.print')
     def test_not_print_msg_for_all_log_levels(self, mock_print):
-        should_print = False
-        for level, method in self.log_methods.items():
-            with self.subTest(level=level):
-                with patch.object(_EasyLoggerCustomLogger, '_print_msg',
-                                  wraps=_EasyLoggerCustomLogger._print_msg) as mock_print_msg:
-                    method("Test message", print_msg=should_print)
-                    mock_print_msg.assert_called_once_with("Test message", print_msg=should_print)
-                    mock_print.assert_not_called()
-                    mock_print.reset_mock()
+        self.should_print = False
+        self._iter_subtests(mock_print)
 
     # these are now deprecated
     @patch('builtins.print')
