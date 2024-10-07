@@ -4,6 +4,15 @@ from EasyLoggerAJM.EasyLoggerAJM import EasyLogger, _EasyLoggerCustomLogger
 
 
 class TestEasyLoggerCustomLogger(unittest.TestCase):
+    """
+    TestEasyLoggerCustomLogger class represents a unit test case for the EasyLoggerCustomLogger class.
+    It provides methods to test logging functionalities for different log levels
+    such as info, debug, warning, error, and critical.
+    The setUp method initializes the logger and log methods for testing.
+    The _iter_subtests method iterates over log methods and asserts the expected behavior of logging messages.
+    The test_print_msg_for_all_log_levels and test_not_print_msg_for_all_log_levels methods further test printing
+     messages for all log levels when should_print flag is set to True and False respectively.
+    """
     def setUp(self):
         self.logger = EasyLogger().UseLogger().logger  # ._EasyLoggerCustomLogger("TestLogger")
         self.log_methods = {
@@ -38,7 +47,18 @@ class TestEasyLoggerCustomLogger(unittest.TestCase):
         self.should_print = False
         self._iter_subtests(mock_print)
 
-    # these are now deprecated
+
+class TestEasyLoggerCustomLoggerDEPRECATED(unittest.TestCase):
+    def setUp(self):
+        self.logger = EasyLogger().UseLogger().logger  # ._EasyLoggerCustomLogger("TestLogger")
+        self.log_methods = {
+            'info': self.logger.info,
+            'debug': self.logger.debug,
+            'warning': self.logger.warning,
+            'error': self.logger.error,
+            'critical': self.logger.critical
+        }
+
     @patch('builtins.print')
     def test_internal_print_call_within_print_msg(self, mock_print):
         with patch.object(_EasyLoggerCustomLogger, '_print_msg',
