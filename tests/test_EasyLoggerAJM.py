@@ -45,8 +45,9 @@ class TestEasyLogger(unittest.TestCase):
         self.assertTrue(re.match(f"{self.test_dir}.*", self.easy_logger_default.log_location))
 
     def test_useLogger_creation(self):
-        logger_cl = EasyLogger.UseLogger(project_name="TestProject2", root_log_location=f"{self.test_dir}2")
-        self.assertIsInstance(logger_cl, EasyLogger)
+        logger_cl = EasyLogger(project_name="TestProject2", root_log_location=f"{self.test_dir}2")
+        logger = EasyLogger.UseLogger()
+        self.assertIsInstance(logger, _EasyLoggerCustomLogger)
         self.assertEqual(logger_cl.project_name, "TestProject2")
         self.assertTrue(re.match(f"{self.test_dir}2.*", logger_cl.log_location))
 

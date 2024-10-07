@@ -24,6 +24,16 @@ class ConsoleOneTimeFilter(logging.Filter):
 
 
 class _EasyLoggerCustomLogger(logging.Logger):
+    """
+    This class defines a custom logger that extends the logging.Logger class.
+    It includes methods for logging at different levels such as info, warning, error, debug, and critical.
+     Additionally, there is a private static method _print_msg that can be used to print a log message
+     based on the provided kwargs. Each logging method in this class calls _print_msg before delegating
+     the actual logging to the corresponding method in the parent class.
+     The logging methods accept parameters for the log message, additional arguments,
+     exception information, stack information, stack level, and extra information.
+      Additional keyword arguments can be provided to control printing behavior.
+    """
     @staticmethod
     def _print_msg(msg, **kwargs):
         if kwargs.get('print_msg', False):
@@ -72,48 +82,72 @@ class _EasyLoggerCustomLogger(logging.Logger):
 
 class EasyLogger:
     """
-    This module provides the EasyLogger class, which is a simple logging utility for Python.
 
-    class EasyLogger:
-        Represents a logging utility that can be used to log messages to various log files.
+    EasyLogger
+    ==========
 
-        Methods:
-        - __init__(self, project_name=None, root_log_location="../logs",
-                 chosen_format=DEFAULT_FORMAT, logger=None, **kwargs):
-            Initializes a new instance of the EasyLogger class.
+    Class to provide an easy logging mechanism for projects.
 
-        - make_file_handlers(self):
-            Adds three file handlers to the logger and sets the log level to debug.
+    Attributes:
+    -----------
+    DEFAULT_FORMAT : str
+        Default log format used in the absence of a specified format.
 
-        - set_timestamp(self, **kwargs):
-            Sets the timestamp for the log messages.
+    INT_TO_STR_LOGGER_LEVELS : dict
+        Mapping of integer logger levels to their string representations.
 
-        Properties:
-        - project_name:
-            Gets the project name for the logger.
+    STR_TO_INT_LOGGER_LEVELS : dict
+        Mapping of string logger levels to their integer representations.
 
-        - inner_log_fstructure:
-            Gets the inner log file structure for the logger.
+    MINUTE_LOG_SPEC_FORMAT : tuple
+        Tuple representing the log specification format at minute granularity.
 
-        - log_location:
-            Gets the log location for the logger.
+    MINUTE_TIMESTAMP : str
+        Timestamp at minute granularity.
 
-        Static Methods:
-        - UseLogger(cls, **kwargs):
-            Creates a new instance of the EasyLogger class and returns it.
+    HOUR_LOG_SPEC_FORMAT : tuple
+        Tuple representing the log specification format at hour granularity.
 
-    Usage:
-        # Create a new EasyLogger instance
-        logger = EasyLogger(project_name="MyProject", root_log_location="../logs")
+    HOUR_TIMESTAMP : str
+        Timestamp at hour granularity.
 
-        # Log an info message
-        logger.logger.info("This is an info message")
+    DAILY_LOG_SPEC_FORMAT : str
+        String representing the log specification format at daily granularity.
 
-        # Log a debug message
-        logger.logger.debug("This is a debug message")
+    DAILY_TIMESTAMP : str
+        Timestamp at daily granularity.
 
-        # Log an error message
-        logger.logger.error("This is an error message")
+    LOG_SPECS : dict
+        Dictionary containing predefined logging specifications.
+
+    Methods:
+    --------
+     __init__(self, project_name=None, root_log_location="../logs", chosen_format=DEFAULT_FORMAT, logger=None, **kwargs)
+        Initialize EasyLogger instance with provided parameters.
+
+    file_logger_levels(self)
+        Property to handle file logger levels.
+
+    project_name(self)
+        Property method to get the project name.
+
+    inner_log_fstructure(self)
+        Get the inner log file structure.
+
+    log_location(self)
+        Get the log location for file handling.
+
+    log_spec(self)
+        Handle logging specifications.
+
+    classmethod UseLogger(cls, **kwargs)
+        Instantiate a class with a specified logger.
+
+    Note:
+    -----
+    The EasyLogger class provides easy logging functionality for projects,
+    allowing customization of log formats and levels.
+
     """
     DEFAULT_FORMAT = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
 
@@ -219,7 +253,7 @@ class EasyLogger:
         Note:
             The logger used for instantiation is obtained from the `logging` module and is named 'logger'.
         """
-        return cls(**kwargs, logger=logging.getLogger('logger'))
+        return cls(**kwargs, logger=kwargs.get('logger', None)).logger
 
     @property
     def file_logger_levels(self):
@@ -459,7 +493,4 @@ class EasyLogger:
             f"{log_level_to_stream}s will be printed to console")
         if use_one_time_filter:
             self.logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
-
-
-# TODO: Tests/doc updates
 

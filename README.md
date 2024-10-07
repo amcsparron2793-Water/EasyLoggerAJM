@@ -1,107 +1,135 @@
 # EasyLoggerAJM
 
-EasyLoggerAJM is a Python logging library designed to facilitate flexible and efficient logging for your applications. It offers a streamlined interface for configuring and using loggers, with features to handle warning messages uniquely and options for granular logging.
+## Description
+EasyLoggerAJM is a comprehensive logging utility designed to provide an easy-to-use interface for logging messages in various formats and levels. It comes with advanced features such as custom log formats, timestamping, and streamlined console logging.
 
-## Features
+## Classes and Methods
 
-- **Console Warning Stream Handler**: Logs warning messages to the console with a filter to ensure each warning is shown only once.
-- **Configurable Log Levels**: Easy configuration of log levels through a dictionary.
-- **Daily Log Specification**: Option to split logs by day instead of by run.
-- **Hourly Log Specification**: Option to split logs by hour.
-- **Enhanced Error Handling**: Improved handling for invalid `log_level_to_stream` values.
-- **Comprehensive Unit Tests**: Ensures robustness and correctness of the logging functionalities.
+### ConsoleOneTimeFilter
+This class provides a filter to ensure that each message is logged only once to the console.
+
+#### Attributes:
+- `logged_messages`: Stores messages that have been logged to prevent duplicate logging.
+
+#### Methods:
+- `__init__`: Initializes the filter.
+- `filter`: Filters messages to ensure they are not logged more than once.
+
+### _EasyLoggerCustomLogger
+This internal class includes various methods to log messages at different levels.
+
+#### Methods:
+- `_print_msg`: Internal method to print the log message.
+- `info`: Logs an informational message.
+- `warning`: Logs a warning message.
+- `error`: Logs an error message.
+- `debug`: Logs a debug message.
+- `critical`: Logs a critical message.
+
+### EasyLogger
+The main class providing extensive logging functionality.
+
+#### Class Attributes:
+- `DEFAULT_FORMAT`: Default format for log messages.
+- `INT_TO_STR_LOGGER_LEVELS`: Mapping of integer to string log levels.
+- `STR_TO_INT_LOGGER_LEVELS`: Mapping of string to integer log levels.
+- `MINUTE_LOG_SPEC_FORMAT`: Log specification format for minute-level logging.
+- `MINUTE_TIMESTAMP`: Format for minute-level timestamp.
+- `HOUR_LOG_SPEC_FORMAT`: Log specification format for hour-level logging.
+- `HOUR_TIMESTAMP`: Format for hour-level timestamp.
+- `DAILY_LOG_SPEC_FORMAT`: Log specification format for daily-level logging.
+- `DAILY_TIMESTAMP`: Format for daily-level timestamp.
+- `LOG_SPECS`: Log specification details.
+
+#### Instance Attributes:
+- `formatter`: Formatter used for log messages.
+- `_log_location`: Location for log files.
+- `logger`: Main logger instance.
+- `_inner_log_fstructure`: Inner log file structure.
+- `show_warning_logs_in_console`: Flag to show warning logs in the console.
+- `_root_log_location`: Root location for logs.
+- `_project_name`: Project name for which log is being created.
+- `_log_spec`: Specification for log format.
+- `_file_logger_levels`: File logger levels.
+- `timestamp`: Timestamp format used for logging.
+
+#### Methods:
+- `__init__`: Initializes the EasyLogger.
+- `UseLogger`: Set up the logger.
+- `file_logger_levels`: Set file logger levels.
+- `project_name`: Set the project name.
+- `inner_log_fstructure`: Set the inner log file structure.
+- `log_location`: Set the log file location.
+- `log_spec`: Set the log specification.
+- `set_timestamp`: Set the timestamp format.
+- `make_file_handlers`: Create file handlers for logging.
+- `create_stream_handler`: Create a stream handler for logging to the console.
 
 ## Installation
 
-You can install EasyLoggerAJM via pip:
-
-```sh
-pip install EasyLoggerAJM
-```
-
-## Usage
-
-### Basic Usage
-
-```python
-from EasyLoggerAJM import EasyLogger
-
-# Create a logger instance
-EL = EasyLogger(log_level_to_stream='warning')
-logger = EL.logger
-# Log messages
-logger.warning("This is a warning message")
-logger.info("This is an info message")
-```
-
-### Configuring Log Levels to Stream
-
-```python
-log_levels = {
-    'debug': 'DEBUG',
-    'info': 'INFO',
-    'warning': 'WARNING',
-    'error': 'ERROR',
-    'critical': 'CRITICAL'
-}
-
-from EasyLoggerAJM import EasyLogger
-
-logger = EasyLogger(log_level_to_stream=log_levels['warning'])
-```
-
-## Development
-
-To contribute to the project, follow these steps:
+To set up the project:
 
 1. Clone the repository:
-
-    ```sh
-    git clone https://github.com/amcsparron2793/EasyLoggerAJM.git
+    ```bash
+    git clone <repository_url>
     ```
-
 2. Navigate to the project directory:
-
-    ```sh
-    cd EasyLoggerAJM
+    ```bash
+    cd <project_directory>
     ```
-
-3. Install the dependencies:
-
-    ```sh
+3. Install the required packages:
+    ```bash
     pip install -r requirements.txt
     ```
 
-## Recent Changes
+## Usage
 
-### Version 1.2
+To use EasyLogger in your project:
+```python
+from EasyLoggerAJM import EasyLogger
 
-- **Refactor Log Specifications and Timestamps Handling**: Introduced a comprehensive `LOG_SPECS` dictionary and updated the `inner_log_fstructure` method, simplifying the format checking logic within getter definitions.
-- **Hourly Log Specification**: Added the ability to split logs by hour.
-- **Refactor Log Spec Format Handling**: Introduced predefined constants for better readability and maintainability.
-- **Logger Levels Normalization**: Revised the normalization of logger levels, converting string levels to integer values.
-- **Property for File Logger Levels**: Introduced a property for `file_logger_levels` to allow setting levels dynamically via kwargs.
+# Initialize the logger
+easy_logger = EasyLogger(project_name="MyProject")
 
-### Version 1.1
+# Set up the logger
+logger = easy_logger.logger
 
-- **Refactor Log Level Handling**: Simplified setting of `log_level_to_stream` using a dictionary lookup.
-- **Add Console Warning Stream Handler**: Introduced `ConsoleOneTimeFilter` to filter repeated warning messages.
+# Log messages
+logger.info("This is an informational message")
+logger.warning("This is a warning message")
+logger.error("This is an error message")
+```
 
-### Version 1.0
+## Features
+- Customizable logging formats and levels
+- Streamlined console logging
+- Advanced timestamping options
 
-- **Add Timestamp Kwarg**: Introduced a kwarg attribute to the `__init__` method for custom timestamp formatting.
-- **Documentation Improvements**: Enhanced docstrings and added detailed unit tests.
+## Contributing
 
-### Version 0.5
-
-- **Refactor EasyLogger**: Improved configuration handling and added comprehensive unit tests.
-
-For a detailed list of changes, check the [commit history](https://github.com/amcsparron2793/EasyLoggerAJM/commits/main).
+1. Fork the project
+2. Create your feature branch:
+    ```bash
+    git checkout -b feature/YourFeature
+    ```
+3. Commit your changes:
+    ```bash
+    git commit -m 'Add some feature'
+    ```
+4. Push to the branch:
+    ```bash
+    git push origin feature/YourFeature
+    ```
+5. Open a pull request
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE.txt) file for more information.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
 
-## Author
+## Authors
 
-Developed by Andrew McSparron. For queries, contact [amcsparron@albanyny.gov](mailto:amcsparron@albanyny.gov).
+- amcsparron2793-Water - [Your GitHub Profile](https://github.com/amcsparron2793-Water)
+
+## Acknowledgments
+
+- Special thanks to anyone whose code, libraries, or tutorials were used to help create this project.
