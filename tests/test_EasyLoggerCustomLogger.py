@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import patch
 from EasyLoggerAJM.EasyLoggerAJM import EasyLogger, _EasyLoggerCustomLogger
+from logging import StreamHandler, DEBUG
+from io import StringIO
 
 
 class TestEasyLoggerCustomLogger(unittest.TestCase):
@@ -14,7 +16,7 @@ class TestEasyLoggerCustomLogger(unittest.TestCase):
      messages for all log levels when should_print flag is set to True and False respectively.
     """
     def setUp(self):
-        self.logger = EasyLogger().UseLogger().logger  # ._EasyLoggerCustomLogger("TestLogger")
+        self.logger = EasyLogger().UseLogger()  # ._EasyLoggerCustomLogger("TestLogger")
         self.log_methods = {
             'info': self.logger.info,
             'debug': self.logger.debug,
@@ -23,18 +25,33 @@ class TestEasyLoggerCustomLogger(unittest.TestCase):
             'critical': self.logger.critical
         }
         self.should_print = True
+        self._initialize_for_log_check()
+
+    def tearDown(self):
+        self.logger.removeHandler(self.log_handler)
+        self.log_handler.close()
+
+    def _initialize_for_log_check(self):
+        self.log_capture_string = StringIO()
+        self.log_handler = StreamHandler(self.log_capture_string)
+        self.logger.addHandler(self.log_handler)
+        self.logger.setLevel(DEBUG)
 
     def _iter_subtests(self, mock_print):
+        log_msg = "Test message"
         for level, method in self.log_methods.items():
             with self.subTest(level=level):
                 with patch.object(_EasyLoggerCustomLogger, '_print_msg',
                                   wraps=_EasyLoggerCustomLogger._print_msg) as mock_print_msg:
-                    method("Test message", print_msg=self.should_print)
-                    mock_print_msg.assert_called_once_with("Test message", print_msg=self.should_print)
+                    method(log_msg, print_msg=self.should_print)
+                    mock_print_msg.assert_called_once_with(log_msg, print_msg=self.should_print)
                     if not self.should_print:
                         mock_print.assert_not_called()
                     else:
-                        mock_print.assert_called_once_with("Test message")
+                        mock_print.assert_called_once_with(log_msg)
+
+                    # Check if the log message was actually logged
+                    self.assertIn(log_msg, self.log_capture_string.getvalue())
                     mock_print.reset_mock()
 
     @patch('builtins.print')
