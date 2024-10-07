@@ -274,7 +274,8 @@ class EasyLogger:
     @property
     def project_name(self):
         """
-        This is a Python method called `project_name` that is a property of a class. It returns the value of a private variable `_project_name` in the class.
+        This is a Python method called `project_name` that is a property of a class.
+        It returns the value of a private variable `_project_name` in the class.
 
         Parameters:
             None
@@ -294,7 +295,8 @@ class EasyLogger:
         """
         Getter for the project_name property.
 
-        Returns the name of the project. If the project name has not been set previously, it is determined based on the filename of the current file.
+        Returns the name of the project. If the project name has not been set previously,
+         it is determined based on the filename of the current file.
 
         Returns:
             str: The name of the project.
@@ -322,9 +324,12 @@ class EasyLogger:
         """
         Getter method for retrieving the inner log format structure.
 
-        This method checks the type of the log_spec['format'] attribute and returns the inner log format structure accordingly.
-        If the log_spec['format'] is of type str, the inner log format structure is set as "{}".format(self.log_spec['format']).
-        If the log_spec['format'] is of type tuple, the inner log format structure is set as "{}/{}".format(self.log_spec['format'][0], self.log_spec['format'][1]).
+        This method checks the type of the log_spec['format'] attribute and returns
+            the inner log format structure accordingly.
+        If the log_spec['format'] is of type str, the inner log format structure is set as
+            "{}".format(self.log_spec['format']).
+        If the log_spec['format'] is of type tuple, the inner log format structure is set as
+            "{}/{}".format(self.log_spec['format'][0], self.log_spec['format'][1]).
 
         Returns:
             str: The inner log format structure.
