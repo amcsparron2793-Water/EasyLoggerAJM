@@ -5,6 +5,7 @@ logger with already set up generalized file handlers
 
 """
 import logging
+from abc import abstractmethod
 from datetime import datetime
 from os import makedirs
 from os.path import join, isdir
@@ -392,11 +393,13 @@ class EasyLogger:
     @staticmethod
     def set_timestamp(**kwargs):
         """
-        This method, `set_timestamp`, is a static method that can be used to set a timestamp for logging purposes. The method takes in keyword arguments as parameters.
+        This method, `set_timestamp`, is a static method that can be used to set a timestamp for logging purposes.
+        The method takes in keyword arguments as parameters.
 
         Parameters:
             **kwargs (dict): Keyword arguments that can contain the following keys:
-                - timestamp (datetime or str, optional): A datetime object or a string representing a timestamp. By default, this key is set to None.
+                - timestamp (datetime or str, optional): A datetime object or a string representing a timestamp.
+                    By default, this key is set to None.
 
         Returns:
             str: Returns a string representing the set timestamp.
@@ -405,8 +408,10 @@ class EasyLogger:
             AttributeError: If the provided timestamp is not a datetime object or a string.
 
         Notes:
-            - If the keyword argument 'timestamp' is provided, the method will return the provided timestamp if it is a datetime object or a string representing a timestamp.
-            - If the keyword argument 'timestamp' is not provided or is set to None, the method will generate a timestamp using the current date and time in ISO format without seconds and colons.
+            - If the keyword argument 'timestamp' is provided, the method will return the provided timestamp if it is a
+                datetime object or a string representing a timestamp.
+            - If the keyword argument 'timestamp' is not provided or is set to None, the method will generate a
+                timestamp using the current date and time in ISO format without seconds and colons.
 
         Example:
             # Set a custom timestamp
@@ -423,6 +428,35 @@ class EasyLogger:
                 raise AttributeError("timestamp must be a datetime object or a string")
         else:
             return datetime.now().isoformat(timespec='minutes').replace(':', '')
+
+    def _add_filter_to_file_handler(self, handler: logging.FileHandler):
+        """
+        this is meant to be overwritten in a subclass to allow for filters
+        to be added to file handlers without rewriting the entire method.
+
+        Ex: new_filter = MyFilter()
+        handler.addFilter(new_filter)
+        :param handler:
+        :type handler:
+        :return:
+        :rtype:
+        """
+        pass
+
+    def _add_filter_to_stream_handler(self, handler: logging.StreamHandler):
+        """
+        this is meant to be overwritten in a subclass to allow for filters
+        to be added to stream handlers without rewriting the entire method.
+
+        Ex: new_filter = MyFilter()
+        handler.addFilter(new_filter)
+
+        :param handler:
+        :type handler:
+        :return:
+        :rtype:
+        """
+        pass
 
     def make_file_handlers(self):
         """
@@ -443,13 +477,17 @@ class EasyLogger:
             self.logger.setLevel(lvl)
             level_string = self.INT_TO_STR_LOGGER_LEVELS[self.logger.level]
 
-            log_path = join(self.log_location, '{}-{}-{}.log'.format(level_string, self.project_name, self.timestamp))
+            log_path = join(self.log_location, '{}-{}-{}.log'.format(level_string,
+                                                                     self.project_name, self.timestamp))
 
             # Create a file handler for the logger, and specify the log file location
             file_handler = logging.FileHandler(log_path)
             # Set the logging format for the file handler
             file_handler.setFormatter(self.formatter)
             file_handler.setLevel(self.logger.level)
+            # doesn't do anything unless subclassed
+            self._add_filter_to_file_handler(file_handler)
+
             # Add the file handlers to the loggers
             self.logger.addHandler(file_handler)
 
@@ -485,6 +523,9 @@ class EasyLogger:
             # set the one time filter, so that log_level_to_stream messages will only be printed to the console once.
             one_time_filter = ConsoleOneTimeFilter()
             stream_handler.addFilter(one_time_filter)
+
+        # doesn't do anything unless subclassed
+        self._add_filter_to_stream_handler(stream_handler)
 
         # Add the stream handler to logger
         self.logger.addHandler(stream_handler)
