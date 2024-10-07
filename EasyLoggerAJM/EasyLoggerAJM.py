@@ -5,7 +5,6 @@ logger with already set up generalized file handlers
 
 """
 import logging
-from abc import abstractmethod
 from datetime import datetime
 from os import makedirs
 from os.path import join, isdir
