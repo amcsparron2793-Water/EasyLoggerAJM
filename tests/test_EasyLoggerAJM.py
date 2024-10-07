@@ -16,7 +16,7 @@ class TestEasyLogger(unittest.TestCase):
         self.easy_logger_non_default = EasyLogger(project_name="TestProject",
                                                   root_log_location="./test_logs",
                                                   logger=getLogger())
-        self.non_default_logger = self.easy_logger_default.logger
+        self.non_default_logger = self.easy_logger_non_default.logger
 
     @classmethod
     def tearDownClass(cls):
