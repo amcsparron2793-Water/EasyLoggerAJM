@@ -65,7 +65,7 @@ class TestEasyLoggerCustomLogger(unittest.TestCase):
         self._iter_subtests(mock_print)
 
 
-class TestEasyLoggerCustomLoggerDEPRECATED(unittest.TestCase):
+"""class TestEasyLoggerCustomLoggerDEPRECATED(unittest.TestCase):
     def setUp(self):
         self.logger = EasyLogger().UseLogger().logger  # ._EasyLoggerCustomLogger("TestLogger")
         self.log_methods = {
@@ -111,7 +111,7 @@ class TestEasyLoggerCustomLoggerDEPRECATED(unittest.TestCase):
     @patch.object(_EasyLoggerCustomLogger, '_print_msg')
     def test_critical_print(self, mock_print):
         self.logger.critical("critical_msg", stack_info=True, print_msg=True)
-        mock_print.assert_called_once_with("critical_msg", print_msg=True)
+        mock_print.assert_called_once_with("critical_msg", print_msg=True)"""
 
 
 if __name__ == "__main__":
