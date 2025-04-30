@@ -8,6 +8,7 @@ import logging
 from datetime import datetime
 from os import makedirs
 from os.path import join, isdir
+from ColorizerAJM.ColorizerAJM import Colorizer
 
 
 class ConsoleOneTimeFilter(logging.Filter):
@@ -23,6 +24,31 @@ class ConsoleOneTimeFilter(logging.Filter):
         return False
 
 
+class ColorizedFormatter(logging.Formatter):
+    def __init__(self, fmt=None, datefmt=None, style='%', validate=True):
+        super().__init__(fmt, datefmt, style, validate)
+        self.colorizer = Colorizer()
+        self.warning_color = 'YELLOW'
+        self.error_color = 'RED'
+        self.other_color = 'GRAY'
+
+    def _get_record_color(self, record):
+        if record.levelname == "WARNING":
+            return self.warning_color
+        elif record.levelname == "ERROR":
+            return self.error_color
+        else:
+            return self.other_color
+
+    def formatMessage(self, record):
+        return self.colorizer.colorize(text=super().formatMessage(record),
+                                       color=self._get_record_color(record), bold=True)
+
+    def formatException(self, ei):
+        return self.colorizer.colorize(text=super().formatException(ei),
+                                       color=self._get_record_color(ei), bold=True)
+
+# TODO: implement here?
 class _EasyLoggerCustomLogger(logging.Logger):
     """
     This class defines a custom logger that extends the logging.Logger class.
