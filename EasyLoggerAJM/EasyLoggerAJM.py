@@ -8,10 +8,21 @@ import logging
 from datetime import datetime
 from os import makedirs
 from os.path import join, isdir
-from ColorizerAJM.ColorizerAJM import Colorizer
+
+NO_COLORIZER = False
+try:
+    from ColorizerAJM.ColorizerAJM import Colorizer
+except (ModuleNotFoundError, ImportError):
+    NO_COLORIZER = True
 
 
 class ConsoleOneTimeFilter(logging.Filter):
+    """
+    ConsoleOneTimeFilter class filters log messages to only allow them to be logged once.
+    :param logging.Filter: A class representing a log filter.
+    :param name: A string indicating the name of the filter.
+    :ivar logged_messages: A set to store logged messages.
+    """
     def __init__(self, name="ConsoleWarnOneTime"):
         super().__init__(name)
         self.logged_messages = set()
@@ -25,9 +36,17 @@ class ConsoleOneTimeFilter(logging.Filter):
 
 
 class ColorizedFormatter(logging.Formatter):
+    """
+    Class that extends logging.Formatter to provide colored output based on log level.
+    It includes methods to format log messages and exceptions with colors specified for
+     warnings, errors, and other log levels.
+    """
     def __init__(self, fmt=None, datefmt=None, style='%', validate=True):
         super().__init__(fmt, datefmt, style, validate)
-        self.colorizer = Colorizer()
+        if NO_COLORIZER:
+            return
+        else:
+            self.colorizer = Colorizer()
         self.warning_color = 'YELLOW'
         self.error_color = 'RED'
         self.other_color = 'GRAY'
@@ -41,14 +60,20 @@ class ColorizedFormatter(logging.Formatter):
             return self.other_color
 
     def formatMessage(self, record):
-        return self.colorizer.colorize(text=super().formatMessage(record),
-                                       color=self._get_record_color(record), bold=True)
+        if NO_COLORIZER:
+            return super().formatMessage(record)
+        else:
+            return self.colorizer.colorize(text=super().formatMessage(record),
+                                           color=self._get_record_color(record), bold=True)
 
     def formatException(self, ei):
-        return self.colorizer.colorize(text=super().formatException(ei),
-                                       color=self._get_record_color(ei), bold=True)
+        if NO_COLORIZER:
+            return super().formatException(ei)
+        else:
+            return self.colorizer.colorize(text=super().formatException(ei),
+                                           color=self._get_record_color(ei), bold=True)
 
-# TODO: implement here?
+
 class _EasyLoggerCustomLogger(logging.Logger):
     """
     This class defines a custom logger that extends the logging.Logger class.
@@ -225,7 +250,8 @@ class EasyLogger:
 
     def __init__(self, project_name=None, root_log_location="../logs",
                  chosen_format=DEFAULT_FORMAT, logger=None, **kwargs):
-
+        self._chosen_format = chosen_format
+        self._no_stream_color = kwargs.get('no_stream_color', False)
         self._log_spec = kwargs.get('log_spec', None)
 
         self._project_name = project_name
@@ -238,7 +264,12 @@ class EasyLogger:
         if self.timestamp != self.log_spec['timestamp']:
             self.timestamp = self.set_timestamp(**{'timestamp': self.timestamp})
 
-        self.formatter = logging.Formatter(chosen_format)
+        self.formatter = kwargs.get('formatter', logging.Formatter(self._chosen_format))
+
+        if not self._no_stream_color:
+            self.stream_formatter = kwargs.get('stream_formatter', ColorizedFormatter(self._chosen_format))
+        else:
+            self.stream_formatter = kwargs.get('stream_formatter', logging.Formatter(self._chosen_format))
         self._file_logger_levels = kwargs.get('file_logger_levels', [])
 
         if not logger:
@@ -259,6 +290,8 @@ class EasyLogger:
                          f"{self.logger.handlers[0]}"
                          f"{self.logger.handlers[1]}"
                          f"{self.logger.handlers[2]}")
+        if not self._no_stream_color and NO_COLORIZER:
+            self.logger.warning("colorizer not available, logs may not be colored as expected.")
         # print("logger initialized")
 
     @classmethod
@@ -547,7 +580,7 @@ class EasyLogger:
         # Create a stream handler for the logger
         stream_handler = logging.StreamHandler()
         # Set the logging format for the stream handler
-        stream_handler.setFormatter(self.formatter)
+        stream_handler.setFormatter(self.stream_formatter)
         stream_handler.setLevel(log_level_to_stream)
         if use_one_time_filter:
             # set the one time filter, so that log_level_to_stream messages will only be printed to the console once.

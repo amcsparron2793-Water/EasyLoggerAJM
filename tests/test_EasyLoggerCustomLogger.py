@@ -1,7 +1,9 @@
 import unittest
 from unittest.mock import patch
 from EasyLoggerAJM.EasyLoggerAJM import EasyLogger, _EasyLoggerCustomLogger
-from logging import StreamHandler, DEBUG
+from logging import StreamHandler, DEBUG, shutdown
+from shutil import rmtree
+from pathlib import Path
 from io import StringIO
 
 
@@ -27,9 +29,17 @@ class TestEasyLoggerCustomLogger(unittest.TestCase):
         self.should_print = True
         self._initialize_for_log_check()
 
-    def tearDown(self):
-        self.logger.removeHandler(self.log_handler)
-        self.log_handler.close()
+    @classmethod
+    def tearDownClass(cls):
+        shutdown()
+        TestEasyLoggerCustomLogger.remove_test_dirs()
+
+    @staticmethod
+    def remove_test_dirs():
+        for x in Path('./').iterdir():
+            if x.name.startswith('test_logs') and x.is_dir():
+                rmtree(x, ignore_errors=True)
+                print(f'{x} removed')
 
     def _initialize_for_log_check(self):
         self.log_capture_string = StringIO()

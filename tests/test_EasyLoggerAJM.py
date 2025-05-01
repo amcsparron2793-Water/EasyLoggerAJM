@@ -4,23 +4,21 @@ import re
 from EasyLoggerAJM.EasyLoggerAJM import EasyLogger
 from EasyLoggerAJM.EasyLoggerAJM import _EasyLoggerCustomLogger
 from logging import getLogger, Logger
+from test_EasyLoggerCustomLogger import TestEasyLoggerCustomLogger
 
 
 # noinspection PyStatementEffect
 class TestEasyLogger(unittest.TestCase):
     def setUp(self):
-        self.easy_logger_default = EasyLogger(project_name="TestProject", root_log_location="./test_logs")
+        test_attrs = {"project_name": "TestProject", "root_log_location": "./test_logs"}
+
+        self.easy_logger_default = EasyLogger(** test_attrs)
         self.test_dir = self.easy_logger_default._root_log_location
         self.default_logger = self.easy_logger_default.logger
 
-        self.easy_logger_non_default = EasyLogger(project_name="TestProject",
-                                                  root_log_location="./test_logs",
+        self.easy_logger_non_default = EasyLogger(** test_attrs,
                                                   logger=getLogger())
         self.non_default_logger = self.easy_logger_non_default.logger
-
-    @classmethod
-    def tearDownClass(cls):
-        print("DONT FORGET TO REMOVE TEST DIRS")
 
     def test_creation(self):
         self.assertIsInstance(self.easy_logger_default, EasyLogger)
@@ -103,4 +101,5 @@ class TestEasyLogger(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+    TestEasyLoggerCustomLogger.tearDownClass()
 
