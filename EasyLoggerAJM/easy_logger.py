@@ -6,15 +6,15 @@ logger with already set up generalized file handlers
 """
 import logging
 from datetime import datetime
+# TODO: remove this in favor of Path use
 from os import makedirs
 from os.path import join, isdir
 from pathlib import Path
-from tabnanny import verbose
 from typing import Union, List
 
-from EasyLoggerAJM.filters import ConsoleOneTimeFilter
-from EasyLoggerAJM.custom_loggers import _EasyLoggerCustomLogger
-from EasyLoggerAJM.formatters import ColorizedFormatter, NO_COLORIZER
+from EasyLoggerAJM import ConsoleOneTimeFilter
+from EasyLoggerAJM import _EasyLoggerCustomLogger
+from EasyLoggerAJM import ColorizedFormatter, NO_COLORIZER
 
 
 class _LogSpec:
@@ -149,6 +149,7 @@ class EasyLogger(_LogSpec):
     """
     DEFAULT_FORMAT = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
 
+    # TODO: replace these with checks using logging.getlevelname()
     INT_TO_STR_LOGGER_LEVELS = {
         10: 'DEBUG',
         20: 'INFO',
@@ -324,11 +325,11 @@ class EasyLogger(_LogSpec):
             self._log_spec = self.LOG_SPECS['minute']
         return self._log_spec
 
-    def initialize_logger(self, logger=None):
+    def initialize_logger(self, logger=None) -> Union[logging.Logger, _EasyLoggerCustomLogger]:
         if not logger:
             self._internal_logger.info('no passed in logger detected')
             logging.setLoggerClass(_EasyLoggerCustomLogger)
-            self._internal_logger.info('logger set to _EasyLoggerCustomLogger')
+            self._internal_logger.info('logger class set to _EasyLoggerCustomLogger')
             # Create a logger with a specified name and make sure propagate is True
             self.logger = logging.getLogger('logger')
         else:
@@ -513,7 +514,7 @@ class EasyLogger(_LogSpec):
                              f"{list(self.__class__.INT_TO_STR_LOGGER_LEVELS)}, "
                              f"not {log_level_to_stream}")
 
-        self._internal_logger.info(f"creating StreamHandler() for {log_level_to_stream} messages to print to console")
+        self._internal_logger.info(f"creating StreamHandler() for {logging.getLevelName(log_level_to_stream)} messages to print to console")
 
         use_one_time_filter = kwargs.get('use_one_time_filter', True)
         self._internal_logger.info(f"use_one_time_filter set to {use_one_time_filter}")
@@ -538,3 +539,9 @@ class EasyLogger(_LogSpec):
             f"{log_level_to_stream}s will be printed to console")
         if use_one_time_filter:
             self._internal_logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
+
+
+if __name__ == '__main__':
+    el = EasyLogger(internal_verbose=True,
+                    show_warning_logs_in_console=True)
+    el.logger.warning("this is an info message", print_msg=True)
