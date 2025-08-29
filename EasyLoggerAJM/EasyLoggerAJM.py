@@ -13,6 +13,35 @@ from EasyLoggerAJM.formatters import NO_COLORIZER
 
 
 class _LogSpec:
+    """
+        Class `_LogSpec` is a container for predefined log specifications and timestamp formats,
+        organized by time intervals (daily, hourly, and minute-based).
+        These specifications are auto-generated based on the current date and time.
+
+        Attributes:
+            MINUTE_LOG_SPEC_FORMAT : tuple
+                A tuple containing the current date (ISO formatted) and time up to minutes in string format without colons.
+            MINUTE_TIMESTAMP : str
+                A compact ISO formatted timestamp up to minutes excluding colons.
+
+            HOUR_LOG_SPEC_FORMAT : tuple
+                A tuple containing the current date (ISO formatted) and time truncated to the hour in string format
+                    (e.g., "1400" for 2 PM).
+            HOUR_TIMESTAMP : str
+                A compact ISO formatted timestamp indicating the hour without colons.
+
+            DAILY_LOG_SPEC_FORMAT : str
+                The current date as an ISO formatted string.
+            DAILY_TIMESTAMP : str
+                The current date truncated to the hour component formatted in ISO standard.
+
+            LOG_SPECS : dict
+                A dictionary containing log specifications for daily, hourly, and minute time intervals.
+                    Each key corresponds to the time interval ('daily', 'hourly', 'minute') and its value is another dictionary with:
+                    - 'name': Name of the log interval.
+                    - 'format': Predefined time format of the given interval.
+                    - 'timestamp': Compact timestamp matching the logical interval.
+    """
     # this is a tuple of the date and the time down to the minute
     MINUTE_LOG_SPEC_FORMAT = (datetime.now().date().isoformat(),
                               ''.join(datetime.now().time().isoformat().split('.')[0].split(":")[:-1]))
@@ -201,16 +230,16 @@ class EasyLogger(_LogSpec):
     def file_logger_levels(self):
         if self._file_logger_levels:
             if [x for x in self._file_logger_levels
-                if x in self.STR_TO_INT_LOGGER_LEVELS
-                   or x in self.INT_TO_STR_LOGGER_LEVELS]:
+                if x in self.__class__.STR_TO_INT_LOGGER_LEVELS
+                   or x in self.__class__.INT_TO_STR_LOGGER_LEVELS]:
                 if any([isinstance(x, str) and not x.isdigit() for x in self._file_logger_levels]):
-                    self._file_logger_levels = [self.STR_TO_INT_LOGGER_LEVELS[x] for x in self._file_logger_levels]
+                    self._file_logger_levels = [self.__class__.STR_TO_INT_LOGGER_LEVELS[x] for x in self._file_logger_levels]
                 elif any([isinstance(x, int) for x in self._file_logger_levels]):
                     pass
         else:
-            self._file_logger_levels = [self.STR_TO_INT_LOGGER_LEVELS["DEBUG"],
-                                        self.STR_TO_INT_LOGGER_LEVELS["INFO"],
-                                        self.STR_TO_INT_LOGGER_LEVELS["ERROR"]]
+            self._file_logger_levels = [self.__class__.STR_TO_INT_LOGGER_LEVELS["DEBUG"],
+                                        self.__class__.STR_TO_INT_LOGGER_LEVELS["INFO"],
+                                        self.__class__.STR_TO_INT_LOGGER_LEVELS["ERROR"]]
         return self._file_logger_levels
 
     @property
@@ -376,7 +405,7 @@ class EasyLogger(_LogSpec):
         """
         for lvl in self.file_logger_levels:
             self.logger.setLevel(lvl)
-            level_string = self.INT_TO_STR_LOGGER_LEVELS[self.logger.level]
+            level_string = self.__class__.INT_TO_STR_LOGGER_LEVELS[self.logger.level]
 
             log_path = join(self.log_location, '{}-{}-{}.log'.format(level_string,
                                                                      self.project_name, self.timestamp))
@@ -406,9 +435,9 @@ class EasyLogger(_LogSpec):
         Note: This method assumes that `self.logger` and `self.formatter` are already defined.
         """
 
-        if log_level_to_stream not in self.INT_TO_STR_LOGGER_LEVELS and log_level_to_stream not in self.STR_TO_INT_LOGGER_LEVELS:
-            raise ValueError(f"log_level_to_stream must be one of {list(self.STR_TO_INT_LOGGER_LEVELS)} or "
-                             f"{list(self.INT_TO_STR_LOGGER_LEVELS)}, "
+        if log_level_to_stream not in self.__class__.INT_TO_STR_LOGGER_LEVELS and log_level_to_stream not in self.__class__.STR_TO_INT_LOGGER_LEVELS:
+            raise ValueError(f"log_level_to_stream must be one of {list(self.__class__.STR_TO_INT_LOGGER_LEVELS)} or "
+                             f"{list(self.__class__.INT_TO_STR_LOGGER_LEVELS)}, "
                              f"not {log_level_to_stream}")
 
         self.logger.info(f"creating StreamHandler() for {log_level_to_stream} messages to print to console")
