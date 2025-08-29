@@ -8,8 +8,13 @@ import logging
 from datetime import datetime
 from os import makedirs
 from os.path import join, isdir
-from EasyLoggerAJM import ColorizedFormatter, ConsoleOneTimeFilter, _EasyLoggerCustomLogger
-from EasyLoggerAJM.formatters import NO_COLORIZER
+from pathlib import Path
+from tempfile import tempdir
+from typing import Union, List
+
+from EasyLoggerAJM.filters import ConsoleOneTimeFilter
+from EasyLoggerAJM.custom_loggers import _EasyLoggerCustomLogger
+from EasyLoggerAJM.formatters import ColorizedFormatter, NO_COLORIZER
 
 
 class _LogSpec:
@@ -164,47 +169,45 @@ class EasyLogger(_LogSpec):
                  chosen_format=DEFAULT_FORMAT, logger=None, **kwargs):
         self._chosen_format = chosen_format
         self._no_stream_color = kwargs.get('no_stream_color', False)
-        self._log_spec = kwargs.get('log_spec', None)
-
-        self._project_name = project_name
         self._root_log_location = root_log_location
+
+        self._internal_logger = self._setup_internal_logger()
+
+        self._internal_logger.info(f"root_log_location set to {self._root_log_location}")
+        self._internal_logger.info(f"chosen_format set to {self._chosen_format}")
+        self._internal_logger.info(f"no_stream_color set to {self._no_stream_color}")
+        self._internal_logger.info(f"kwargs passed to __init__ are {kwargs}")
+
+        # properties
+        self._file_logger_levels = kwargs.get('file_logger_levels', [])
+        self._project_name = project_name
         self._inner_log_fstructure = None
         self._log_location = None
+        self._log_spec = kwargs.get('log_spec', None)
+
         self.show_warning_logs_in_console = kwargs.get('show_warning_logs_in_console', False)
+        self._internal_logger.info(f'show_warning_logs_in_console set to {self.show_warning_logs_in_console}')
 
         self.timestamp = kwargs.get('timestamp', self.log_spec['timestamp'])
         if self.timestamp != self.log_spec['timestamp']:
             self.timestamp = self.set_timestamp(**{'timestamp': self.timestamp})
 
-        self.formatter = kwargs.get('formatter', logging.Formatter(self._chosen_format))
+        self.formatter, self.stream_formatter = self._setup_formatters(**kwargs)
 
-        if not self._no_stream_color:
-            self.stream_formatter = kwargs.get('stream_formatter', ColorizedFormatter(self._chosen_format))
-        else:
-            self.stream_formatter = kwargs.get('stream_formatter', logging.Formatter(self._chosen_format))
-        self._file_logger_levels = kwargs.get('file_logger_levels', [])
-
-        if not logger:
-            logging.setLoggerClass(_EasyLoggerCustomLogger)
-            # Create a logger with a specified name and make sure propagate is True
-            self.logger = logging.getLogger('logger')
-        else:
-            self.logger: logging.getLogger = logger
-        self.logger.propagate = True
+        self.logger = self.initialize_logger(logger=logger)
 
         self.make_file_handlers()
+
         if self.show_warning_logs_in_console:
+            self._internal_logger.info('warning logs will be printed to console - creating stream handler')
             self.create_stream_handler()
 
-        # set the logger level back to DEBUG, so it handles all messages
-        self.logger.setLevel(10)
-        self.logger.info(f"Starting {project_name} with the following FileHandlers:"
-                         f"{self.logger.handlers[0]}"
-                         f"{self.logger.handlers[1]}"
-                         f"{self.logger.handlers[2]}")
-        if not self._no_stream_color and NO_COLORIZER:
-            self.logger.warning("colorizer not available, logs may not be colored as expected.")
-        # print("logger initialized")
+        self.post_handler_setup()
+
+    @staticmethod
+    def _get_level_handler_string(handlers: List[logging.Handler]) -> str:
+        return ', '.join([' - '.join((x.__class__.__name__, logging.getLevelName(x.level)))
+                          for x in handlers])
 
     @classmethod
     def UseLogger(cls, **kwargs):
@@ -233,7 +236,8 @@ class EasyLogger(_LogSpec):
                 if x in self.__class__.STR_TO_INT_LOGGER_LEVELS
                    or x in self.__class__.INT_TO_STR_LOGGER_LEVELS]:
                 if any([isinstance(x, str) and not x.isdigit() for x in self._file_logger_levels]):
-                    self._file_logger_levels = [self.__class__.STR_TO_INT_LOGGER_LEVELS[x] for x in self._file_logger_levels]
+                    self._file_logger_levels = [self.__class__.STR_TO_INT_LOGGER_LEVELS[x] for x in
+                                                self._file_logger_levels]
                 elif any([isinstance(x, int) for x in self._file_logger_levels]):
                     pass
         else:
@@ -320,8 +324,33 @@ class EasyLogger(_LogSpec):
             self._log_spec = self.LOG_SPECS['minute']
         return self._log_spec
 
-    @staticmethod
-    def set_timestamp(**kwargs):
+    def initialize_logger(self, logger=None):
+        if not logger:
+            self._internal_logger.info('no passed in logger detected')
+            logging.setLoggerClass(_EasyLoggerCustomLogger)
+            self._internal_logger.info('logger set to _EasyLoggerCustomLogger')
+            # Create a logger with a specified name and make sure propagate is True
+            self.logger = logging.getLogger('logger')
+        else:
+            self._internal_logger.info(f'passed in logger ({logger}) detected')
+            self.logger: logging.getLogger = logger
+        self.logger.propagate = True
+        self._internal_logger.info('logger initialized')
+        self._internal_logger.info(f'propagate set to {self.logger.propagate}')
+        return self.logger
+
+    def post_handler_setup(self):
+        # set the logger level back to DEBUG, so it handles all messages
+        self.logger.setLevel(10)
+        self._internal_logger.info(f'logger level set back to {self.logger.level}')
+        self.logger.info(f"Starting {self.project_name} with the following handlers: "
+                         f"{self._get_level_handler_string(self.logger.handlers)}")
+        if not self._no_stream_color and NO_COLORIZER:
+            self.logger.warning("colorizer not available, logs may not be colored as expected.")
+        self._internal_logger.info("final logger initialized")
+        # print("logger initialized")
+
+    def set_timestamp(self, **kwargs):
         """
         This method, `set_timestamp`, is a static method that can be used to set a timestamp for logging purposes.
         The method takes in keyword arguments as parameters.
@@ -353,11 +382,44 @@ class EasyLogger(_LogSpec):
         timestamp = kwargs.get('timestamp', None)
         if timestamp is not None:
             if isinstance(timestamp, (datetime, str)):
+                self._internal_logger.info(f"timestamp set to {timestamp}")
                 return timestamp
             else:
-                raise AttributeError("timestamp must be a datetime object or a string")
+                try:
+                    raise AttributeError("timestamp must be a datetime object or a string")
+                except AttributeError as e:
+                    self._internal_logger.error(e, exc_info=True)
+                    raise e from None
         else:
-            return datetime.now().isoformat(timespec='minutes').replace(':', '')
+            timestamp = datetime.now().isoformat(timespec='minutes').replace(':', '')
+            self._internal_logger.info(f"timestamp set to {timestamp}")
+            return timestamp
+
+    def _setup_internal_logger(self, internal_log_location=None):
+        self._internal_logger = logging.getLogger('EasyLogger_internal')
+        self._internal_logger.propagate = False
+        self._internal_logger.setLevel(10)
+        log_file_path = Path(join(self._root_log_location,
+                                  'EasyLogger_internal.log').replace('\\','/'))
+        log_file_mode = 'w'
+        if not log_file_path.exists():
+            Path(self._root_log_location).mkdir(parents=True, exist_ok=True)
+        h = logging.FileHandler(log_file_path, mode=log_file_mode)
+        fmt = logging.Formatter(self._chosen_format)
+        h.setFormatter(fmt)
+
+        self._internal_logger.addHandler(h)
+        self._internal_logger.info("internal logger initialized")
+        return self._internal_logger
+
+    def _setup_formatters(self, **kwargs) -> (logging.Formatter, Union[ColorizedFormatter, logging.Formatter]):
+        formatter = kwargs.get('formatter', logging.Formatter(self._chosen_format))
+
+        if not self._no_stream_color:
+            stream_formatter = kwargs.get('stream_formatter', ColorizedFormatter(self._chosen_format))
+        else:
+            stream_formatter = kwargs.get('stream_formatter', logging.Formatter(self._chosen_format))
+        return formatter, stream_formatter
 
     def _add_filter_to_file_handler(self, handler: logging.FileHandler):
         """
@@ -403,6 +465,7 @@ class EasyLogger(_LogSpec):
         Raises:
             None
         """
+        self._internal_logger.info("creating file handlers for each logger level and log file location")
         for lvl in self.file_logger_levels:
             self.logger.setLevel(lvl)
             level_string = self.__class__.INT_TO_STR_LOGGER_LEVELS[self.logger.level]
@@ -421,7 +484,7 @@ class EasyLogger(_LogSpec):
             # Add the file handlers to the loggers
             self.logger.addHandler(file_handler)
 
-    def create_stream_handler(self, log_level_to_stream="WARNING", **kwargs):
+    def create_stream_handler(self, log_level_to_stream=logging.WARNING, **kwargs):
         """
         Creates and configures a StreamHandler for warning messages to print to the console.
 
@@ -435,14 +498,16 @@ class EasyLogger(_LogSpec):
         Note: This method assumes that `self.logger` and `self.formatter` are already defined.
         """
 
-        if log_level_to_stream not in self.__class__.INT_TO_STR_LOGGER_LEVELS and log_level_to_stream not in self.__class__.STR_TO_INT_LOGGER_LEVELS:
+        if (log_level_to_stream not in self.__class__.INT_TO_STR_LOGGER_LEVELS
+                and log_level_to_stream not in self.__class__.STR_TO_INT_LOGGER_LEVELS):
             raise ValueError(f"log_level_to_stream must be one of {list(self.__class__.STR_TO_INT_LOGGER_LEVELS)} or "
                              f"{list(self.__class__.INT_TO_STR_LOGGER_LEVELS)}, "
                              f"not {log_level_to_stream}")
 
-        self.logger.info(f"creating StreamHandler() for {log_level_to_stream} messages to print to console")
+        self._internal_logger.info(f"creating StreamHandler() for {log_level_to_stream} messages to print to console")
 
         use_one_time_filter = kwargs.get('use_one_time_filter', True)
+        self._internal_logger.info(f"use_one_time_filter set to {use_one_time_filter}")
 
         # Create a stream handler for the logger
         stream_handler = logging.StreamHandler()
@@ -459,9 +524,9 @@ class EasyLogger(_LogSpec):
 
         # Add the stream handler to logger
         self.logger.addHandler(stream_handler)
-        self.logger.info(
+        self._internal_logger.info(
             f"StreamHandler() for {log_level_to_stream} messages added. "
             f"{log_level_to_stream}s will be printed to console")
         if use_one_time_filter:
-            self.logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
+            self._internal_logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
 
