@@ -8,130 +8,43 @@ import logging
 from datetime import datetime
 from os import makedirs
 from os.path import join, isdir
-
-NO_COLORIZER = False
-try:
-    from ColorizerAJM.ColorizerAJM import Colorizer
-except (ModuleNotFoundError, ImportError):
-    NO_COLORIZER = True
+from EasyLoggerAJM import ColorizedFormatter, ConsoleOneTimeFilter, _EasyLoggerCustomLogger
+from EasyLoggerAJM.formatters import NO_COLORIZER
 
 
-class ConsoleOneTimeFilter(logging.Filter):
-    """
-    ConsoleOneTimeFilter class filters log messages to only allow them to be logged once.
-    :param logging.Filter: A class representing a log filter.
-    :param name: A string indicating the name of the filter.
-    :ivar logged_messages: A set to store logged messages.
-    """
-    def __init__(self, name="ConsoleWarnOneTime"):
-        super().__init__(name)
-        self.logged_messages = set()
+class _LogSpec:
+    # this is a tuple of the date and the time down to the minute
+    MINUTE_LOG_SPEC_FORMAT = (datetime.now().date().isoformat(),
+                              ''.join(datetime.now().time().isoformat().split('.')[0].split(":")[:-1]))
+    MINUTE_TIMESTAMP = datetime.now().isoformat(timespec='minutes').replace(':', '')
 
-    def filter(self, record):
-        # We only log the message if it has not been logged before
-        if record.msg not in self.logged_messages:
-            self.logged_messages.add(record.msg)
-            return True
-        return False
+    HOUR_LOG_SPEC_FORMAT = datetime.now().date().isoformat(), (
+            datetime.now().time().isoformat().split('.')[0].split(':')[0] + '00')
+    HOUR_TIMESTAMP = datetime.now().time().isoformat().split('.')[0].split(':')[0] + '00'
 
+    DAILY_LOG_SPEC_FORMAT = datetime.now().date().isoformat()
+    DAILY_TIMESTAMP = datetime.now().isoformat(timespec='hours').split('T')[0]
 
-class ColorizedFormatter(logging.Formatter):
-    """
-    Class that extends logging.Formatter to provide colored output based on log level.
-    It includes methods to format log messages and exceptions with colors specified for
-     warnings, errors, and other log levels.
-    """
-    def __init__(self, fmt=None, datefmt=None, style='%', validate=True):
-        super().__init__(fmt, datefmt, style, validate)
-        if NO_COLORIZER:
-            return
-        else:
-            self.colorizer = Colorizer()
-        self.warning_color = 'YELLOW'
-        self.error_color = 'RED'
-        self.other_color = 'GRAY'
-
-    def _get_record_color(self, record):
-        if record.levelname == "WARNING":
-            return self.warning_color
-        elif record.levelname == "ERROR":
-            return self.error_color
-        else:
-            return self.other_color
-
-    def formatMessage(self, record):
-        if NO_COLORIZER:
-            return super().formatMessage(record)
-        else:
-            return self.colorizer.colorize(text=super().formatMessage(record),
-                                           color=self._get_record_color(record), bold=True)
-
-    def formatException(self, ei):
-        if NO_COLORIZER:
-            return super().formatException(ei)
-        else:
-            return self.colorizer.colorize(text=super().formatException(ei),
-                                           color=self._get_record_color(ei), bold=True)
+    LOG_SPECS = {
+        'daily': {
+            'name': 'daily',
+            'format': DAILY_LOG_SPEC_FORMAT,
+            'timestamp': DAILY_TIMESTAMP
+        },
+        'hourly': {
+            'name': 'hourly',
+            'format': HOUR_LOG_SPEC_FORMAT,
+            'timestamp': HOUR_TIMESTAMP
+        },
+        'minute': {
+            'name': 'minute',
+            'format': MINUTE_LOG_SPEC_FORMAT,
+            'timestamp': MINUTE_TIMESTAMP
+        }
+    }
 
 
-class _EasyLoggerCustomLogger(logging.Logger):
-    """
-    This class defines a custom logger that extends the logging.Logger class.
-    It includes methods for logging at different levels such as info, warning, error, debug, and critical.
-     Additionally, there is a private static method _print_msg that can be used to print a log message
-     based on the provided kwargs. Each logging method in this class calls _print_msg before delegating
-     the actual logging to the corresponding method in the parent class.
-     The logging methods accept parameters for the log message, additional arguments,
-     exception information, stack information, stack level, and extra information.
-      Additional keyword arguments can be provided to control printing behavior.
-    """
-    @staticmethod
-    def _print_msg(msg, **kwargs):
-        if kwargs.get('print_msg', False):
-            print(msg)
-
-    def info(self, msg: object, *args: object, exc_info=None,
-             stack_info: bool = False, stacklevel: int = 1,
-             extra=None, **kwargs):
-        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
-        super().info(msg, *args, exc_info=exc_info,
-                     stack_info=stack_info, stacklevel=stacklevel,
-                     extra=extra)
-
-    def warning(self, msg: object, *args: object, exc_info=None,
-                stack_info: bool = False, stacklevel: int = 1,
-                extra=None, **kwargs):
-        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
-        super().warning(msg, *args, exc_info=exc_info,
-                        stack_info=stack_info, stacklevel=stacklevel,
-                        extra=extra)
-
-    def error(self, msg: object, *args: object, exc_info=None,
-              stack_info: bool = False, stacklevel: int = 1,
-              extra=None, **kwargs):
-        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
-        super().error(msg, *args, exc_info=exc_info,
-                      stack_info=stack_info, stacklevel=stacklevel,
-                      extra=extra)
-
-    def debug(self, msg: object, *args: object, exc_info=None,
-              stack_info: bool = False, stacklevel: int = 1,
-              extra=None, **kwargs):
-        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
-        super().debug(msg, *args, exc_info=exc_info,
-                      stack_info=stack_info, stacklevel=stacklevel,
-                      extra=extra)
-
-    def critical(self, msg: object, *args: object, exc_info=None,
-                 stack_info: bool = False, stacklevel: int = 1,
-                 extra=None, **kwargs):
-        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
-        super().critical(msg, *args, exc_info=exc_info,
-                         stack_info=stack_info, stacklevel=stacklevel,
-                         extra=extra)
-
-
-class EasyLogger:
+class EasyLogger(_LogSpec):
     """
 
     EasyLogger
@@ -216,36 +129,6 @@ class EasyLogger:
         'WARNING': 30,
         'ERROR': 40,
         'CRITICAL': 50
-    }
-
-    # this is a tuple of the date and the time down to the minute
-    MINUTE_LOG_SPEC_FORMAT = (datetime.now().date().isoformat(),
-                              ''.join(datetime.now().time().isoformat().split('.')[0].split(":")[:-1]))
-    MINUTE_TIMESTAMP = datetime.now().isoformat(timespec='minutes').replace(':', '')
-
-    HOUR_LOG_SPEC_FORMAT = datetime.now().date().isoformat(), (
-            datetime.now().time().isoformat().split('.')[0].split(':')[0] + '00')
-    HOUR_TIMESTAMP = datetime.now().time().isoformat().split('.')[0].split(':')[0] + '00'
-
-    DAILY_LOG_SPEC_FORMAT = datetime.now().date().isoformat()
-    DAILY_TIMESTAMP = datetime.now().isoformat(timespec='hours').split('T')[0]
-
-    LOG_SPECS = {
-        'daily': {
-            'name': 'daily',
-            'format': DAILY_LOG_SPEC_FORMAT,
-            'timestamp': DAILY_TIMESTAMP
-        },
-        'hourly': {
-            'name': 'hourly',
-            'format': HOUR_LOG_SPEC_FORMAT,
-            'timestamp': HOUR_TIMESTAMP
-        },
-        'minute': {
-            'name': 'minute',
-            'format': MINUTE_LOG_SPEC_FORMAT,
-            'timestamp': MINUTE_TIMESTAMP
-        }
     }
 
     def __init__(self, project_name=None, root_log_location="../logs",
@@ -333,25 +216,6 @@ class EasyLogger:
     @property
     def project_name(self):
         """
-        This is a Python method called `project_name` that is a property of a class.
-        It returns the value of a private variable `_project_name` in the class.
-
-        Parameters:
-            None
-
-        Returns:
-            A string representing the project name.
-
-        Example usage:
-            ```
-            obj = ClassName()
-            result = obj.project_name
-            ```"""
-        return self._project_name
-
-    @project_name.getter
-    def project_name(self):
-        """
         Getter for the project_name property.
 
         Returns the name of the project. If the project name has not been set previously,
@@ -368,17 +232,6 @@ class EasyLogger:
         return self._project_name
 
     @property
-    def inner_log_fstructure(self):
-        """
-        This property returns the inner log fstructure of an object.
-
-        Returns:
-            The inner log fstructure.
-
-        """
-        return self._inner_log_fstructure
-
-    @inner_log_fstructure.getter
     def inner_log_fstructure(self):
         """
         Getter method for retrieving the inner log format structure.
@@ -400,21 +253,6 @@ class EasyLogger:
         return self._inner_log_fstructure
 
     @property
-    def log_location(self):
-        """
-        This is a property method named `log_location` which returns the value of `_log_location` attribute. It can be accessed using dot notation.
-
-        Example:
-            obj = ClassName()
-            print(obj.log_location)  # Output: value of _log_location attribute
-
-        Returns:
-            The value of `_log_location` attribute.
-
-        """
-        return self._log_location
-
-    @log_location.getter
     def log_location(self):
         """
         Getter method for retrieving the log_location property.
