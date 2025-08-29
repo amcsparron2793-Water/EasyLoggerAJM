@@ -1,8 +1,8 @@
 import unittest
 import re
 
-from EasyLoggerAJM.EasyLoggerAJM import EasyLogger
-from EasyLoggerAJM.EasyLoggerAJM import _EasyLoggerCustomLogger
+from EasyLoggerAJM.easy_logger import EasyLogger
+from EasyLoggerAJM.easy_logger import _EasyLoggerCustomLogger
 from logging import getLogger, Logger
 from test_EasyLoggerCustomLogger import TestEasyLoggerCustomLogger
 

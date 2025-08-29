@@ -1,5 +1,5 @@
 """
-EasyLoggerAJM.py
+easy_logger.py
 
 logger with already set up generalized file handlers
 
@@ -9,7 +9,7 @@ from datetime import datetime
 from os import makedirs
 from os.path import join, isdir
 from pathlib import Path
-from tempfile import tempdir
+from tabnanny import verbose
 from typing import Union, List
 
 from EasyLoggerAJM.filters import ConsoleOneTimeFilter
@@ -171,7 +171,7 @@ class EasyLogger(_LogSpec):
         self._no_stream_color = kwargs.get('no_stream_color', False)
         self._root_log_location = root_log_location
 
-        self._internal_logger = self._setup_internal_logger()
+        self._internal_logger = self._setup_internal_logger(verbose=kwargs.get('internal_verbose', False))
 
         self._internal_logger.info(f"root_log_location set to {self._root_log_location}")
         self._internal_logger.info(f"chosen_format set to {self._chosen_format}")
@@ -395,20 +395,29 @@ class EasyLogger(_LogSpec):
             self._internal_logger.info(f"timestamp set to {timestamp}")
             return timestamp
 
-    def _setup_internal_logger(self, internal_log_location=None):
-        self._internal_logger = logging.getLogger('EasyLogger_internal')
-        self._internal_logger.propagate = False
-        self._internal_logger.setLevel(10)
+    def _setup_internal_logger_handlers(self, verbose=False):
         log_file_path = Path(join(self._root_log_location,
                                   'EasyLogger_internal.log').replace('\\','/'))
+        fmt = logging.Formatter(self._chosen_format)
+
         log_file_mode = 'w'
         if not log_file_path.exists():
             Path(self._root_log_location).mkdir(parents=True, exist_ok=True)
         h = logging.FileHandler(log_file_path, mode=log_file_mode)
-        fmt = logging.Formatter(self._chosen_format)
         h.setFormatter(fmt)
-
         self._internal_logger.addHandler(h)
+
+        if verbose:
+            h2 = logging.StreamHandler()
+            h2.setFormatter(fmt)
+            self._internal_logger.addHandler(h2)
+
+    def _setup_internal_logger(self, **kwargs):
+        self._internal_logger = logging.getLogger('EasyLogger_internal')
+        self._internal_logger.propagate = False
+        self._internal_logger.setLevel(10)
+        self._setup_internal_logger_handlers(verbose=kwargs.get('verbose', False))
+
         self._internal_logger.info("internal logger initialized")
         return self._internal_logger
 
@@ -529,4 +538,3 @@ class EasyLogger(_LogSpec):
             f"{log_level_to_stream}s will be printed to console")
         if use_one_time_filter:
             self._internal_logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
-

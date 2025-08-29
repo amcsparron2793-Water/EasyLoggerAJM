@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch
-from EasyLoggerAJM.EasyLoggerAJM import EasyLogger, _EasyLoggerCustomLogger
+from EasyLoggerAJM.easy_logger import EasyLogger, _EasyLoggerCustomLogger
 from logging import StreamHandler, DEBUG, shutdown
 from shutil import rmtree
 from pathlib import Path
