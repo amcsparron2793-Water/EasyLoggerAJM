@@ -581,8 +581,8 @@ class EasyLogger(_LogSpec, _InternalLoggerMethods):
         # Add the stream handler to logger
         self.logger.addHandler(stream_handler)
         self._internal_logger.info(
-            f"StreamHandler() for {log_level_to_stream} messages added. "
-            f"{log_level_to_stream}s will be printed to console")
+            f"StreamHandler() for {logging.getLevelName(log_level_to_stream)} messages added. "
+            f"{logging.getLevelName(log_level_to_stream)}s will be printed to console")
         if use_one_time_filter:
             self._internal_logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
 
