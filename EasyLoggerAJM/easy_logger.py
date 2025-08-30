@@ -78,7 +78,82 @@ class _LogSpec:
     }
 
 
-class EasyLogger(_LogSpec):
+# noinspection PyUnresolvedReferences
+class _InternalLoggerMethods:
+    """
+    This class contains internal utility methods for configuring and logging internal
+    operations of the logger. These methods are designed for internal use and handle
+    logging of initial attributes, setting up file and stream handlers, and initializing
+    the internal logger.
+
+    Methods
+    -------
+    _log_attributes_internal(logger_kwargs)
+        Logs the initial state of key instance attributes and any additional keyword
+        arguments passed during initialization.
+
+    _setup_internal_logger_handlers(verbose=False)
+        Sets up handlers for the internal logger, including a file handler to log into
+        a predefined file and, optionally, a stream handler for console output.
+
+    _setup_internal_logger(**kwargs)
+        Initializes and configures the internal logger with a designated logging level
+        and handlers. Returns the initialized logger.
+    """
+    def _log_attributes_internal(self, logger_kwargs):
+        """
+        Logs internal attributes and initialization parameters for debugging purposes.
+
+        :param logger_kwargs: Arguments passed during the initialization of the instance.
+        :type logger_kwargs: dict
+        """
+        self._internal_logger.info(f"root_log_location set to {self._root_log_location}")
+        self._internal_logger.info(f"chosen_format set to {self._chosen_format}")
+        self._internal_logger.info(f"no_stream_color set to {self._no_stream_color}")
+        self._internal_logger.info(f"kwargs passed to __init__ are {logger_kwargs}")
+
+    def _setup_internal_logger_handlers(self, verbose=False):
+        """
+        :param verbose: Indicates whether to enable verbose logging. If True, adds a StreamHandler to log messages to the console.
+        :type verbose: bool
+        :return: None
+        :rtype: None
+        """
+        log_file_path = Path(join(self._root_log_location,
+                                  'EasyLogger_internal.log').replace('\\','/'))
+        fmt = logging.Formatter(self._chosen_format)
+
+        log_file_mode = 'w'
+        if not log_file_path.exists():
+            Path(self._root_log_location).mkdir(parents=True, exist_ok=True)
+        h = logging.FileHandler(log_file_path, mode=log_file_mode)
+        h.setFormatter(fmt)
+        self._internal_logger.addHandler(h)
+
+        if verbose:
+            h2 = logging.StreamHandler()
+            h2.setFormatter(fmt)
+            self._internal_logger.addHandler(h2)
+
+    def _setup_internal_logger(self, **kwargs):
+        """
+        Sets up the internal logger for the application.
+
+        :param kwargs: Optional keyword arguments for configuring the logger.
+            The key 'verbose' can be used to enable or disable verbose logging.
+        :return: The configured internal logger instance.
+        :rtype: logging.Logger
+        """
+        self._internal_logger = logging.getLogger('EasyLogger_internal')
+        self._internal_logger.propagate = False
+        self._internal_logger.setLevel(10)
+        self._setup_internal_logger_handlers(verbose=kwargs.get('verbose', False))
+
+        self._internal_logger.info("internal logger initialized")
+        return self._internal_logger
+
+
+class EasyLogger(_LogSpec, _InternalLoggerMethods):
     """
 
     EasyLogger
@@ -392,38 +467,6 @@ class EasyLogger(_LogSpec):
             timestamp = datetime.now().isoformat(timespec='minutes').replace(':', '')
             self._internal_logger.info(f"timestamp set to {timestamp}")
             return timestamp
-
-    def _log_attributes_internal(self, logger_kwargs):
-        self._internal_logger.info(f"root_log_location set to {self._root_log_location}")
-        self._internal_logger.info(f"chosen_format set to {self._chosen_format}")
-        self._internal_logger.info(f"no_stream_color set to {self._no_stream_color}")
-        self._internal_logger.info(f"kwargs passed to __init__ are {logger_kwargs}")
-
-    def _setup_internal_logger_handlers(self, verbose=False):
-        log_file_path = Path(join(self._root_log_location,
-                                  'EasyLogger_internal.log').replace('\\','/'))
-        fmt = logging.Formatter(self._chosen_format)
-
-        log_file_mode = 'w'
-        if not log_file_path.exists():
-            Path(self._root_log_location).mkdir(parents=True, exist_ok=True)
-        h = logging.FileHandler(log_file_path, mode=log_file_mode)
-        h.setFormatter(fmt)
-        self._internal_logger.addHandler(h)
-
-        if verbose:
-            h2 = logging.StreamHandler()
-            h2.setFormatter(fmt)
-            self._internal_logger.addHandler(h2)
-
-    def _setup_internal_logger(self, **kwargs):
-        self._internal_logger = logging.getLogger('EasyLogger_internal')
-        self._internal_logger.propagate = False
-        self._internal_logger.setLevel(10)
-        self._setup_internal_logger_handlers(verbose=kwargs.get('verbose', False))
-
-        self._internal_logger.info("internal logger initialized")
-        return self._internal_logger
 
     def _setup_formatters(self, **kwargs) -> (logging.Formatter, Union[ColorizedFormatter, logging.Formatter]):
         formatter = kwargs.get('formatter', logging.Formatter(self._chosen_format))
