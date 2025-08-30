@@ -174,10 +174,7 @@ class EasyLogger(_LogSpec):
 
         self._internal_logger = self._setup_internal_logger(verbose=kwargs.get('internal_verbose', False))
 
-        self._internal_logger.info(f"root_log_location set to {self._root_log_location}")
-        self._internal_logger.info(f"chosen_format set to {self._chosen_format}")
-        self._internal_logger.info(f"no_stream_color set to {self._no_stream_color}")
-        self._internal_logger.info(f"kwargs passed to __init__ are {kwargs}")
+        self._log_attributes_internal(kwargs)
 
         # properties
         self._file_logger_levels = kwargs.get('file_logger_levels', [])
@@ -395,6 +392,12 @@ class EasyLogger(_LogSpec):
             timestamp = datetime.now().isoformat(timespec='minutes').replace(':', '')
             self._internal_logger.info(f"timestamp set to {timestamp}")
             return timestamp
+
+    def _log_attributes_internal(self, logger_kwargs):
+        self._internal_logger.info(f"root_log_location set to {self._root_log_location}")
+        self._internal_logger.info(f"chosen_format set to {self._chosen_format}")
+        self._internal_logger.info(f"no_stream_color set to {self._no_stream_color}")
+        self._internal_logger.info(f"kwargs passed to __init__ are {logger_kwargs}")
 
     def _setup_internal_logger_handlers(self, verbose=False):
         log_file_path = Path(join(self._root_log_location,
