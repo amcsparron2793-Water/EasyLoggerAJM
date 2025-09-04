@@ -40,14 +40,17 @@ class TestEasyLogger(unittest.TestCase):
         self.assertIsNotNone(self.easy_logger_default.inner_log_fstructure)
 
     def test_log_location(self):
-        self.assertTrue(re.match(f"{self.test_dir}.*", self.easy_logger_default.log_location))
+        posix_with_leading_dir = ('./' + self.easy_logger_default.log_location.as_posix())
+        self.assertTrue(re.match(f"{self.test_dir}.*", posix_with_leading_dir))
 
     def test_useLogger_creation(self):
         logger_cl = EasyLogger(project_name="TestProject2", root_log_location=f"{self.test_dir}2")
         logger = EasyLogger.UseLogger()
         self.assertIsInstance(logger, _EasyLoggerCustomLogger)
         self.assertEqual(logger_cl.project_name, "TestProject2")
-        self.assertTrue(re.match(f"{self.test_dir}2.*", logger_cl.log_location))
+
+        posix_with_leading_dir = ('./' + logger_cl.log_location.as_posix())
+        self.assertTrue(re.match(f"{self.test_dir}2.*", posix_with_leading_dir))
 
     def test_make_file_handlers(self):
         self.easy_logger_default.make_file_handlers()

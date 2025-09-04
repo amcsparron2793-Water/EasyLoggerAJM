@@ -6,9 +6,6 @@ logger with already set up generalized file handlers
 """
 import logging
 from datetime import datetime
-# TODO: remove this in favor of Path use
-from os import makedirs
-from os.path import join, isdir
 from pathlib import Path
 from typing import Union, List
 
@@ -100,6 +97,7 @@ class _InternalLoggerMethods:
         Initializes and configures the internal logger with a designated logging level
         and handlers. Returns the initialized logger.
     """
+
     def _log_attributes_internal(self, logger_kwargs):
         """
         Logs internal attributes and initialization parameters for debugging purposes.
@@ -119,8 +117,8 @@ class _InternalLoggerMethods:
         :return: None
         :rtype: None
         """
-        log_file_path = Path(join(self._root_log_location,
-                                  'EasyLogger_internal.log').replace('\\','/'))
+        log_file_path = Path(self._root_log_location,
+                             'EasyLogger_internal.log'.replace('\\', '/'))
         fmt = logging.Formatter(self._chosen_format)
 
         log_file_mode = 'w'
@@ -359,18 +357,19 @@ class EasyLogger(_LogSpec, _InternalLoggerMethods):
         return self._inner_log_fstructure
 
     @property
-    def log_location(self):
+    def log_location(self) -> Path:
         """
         Getter method for retrieving the log_location property.
 
         Returns:
             str: The absolute path of the log location.
         """
-        self._log_location = join(self._root_log_location, self.inner_log_fstructure)
-        if isdir(self._log_location):
+        self._log_location = Path(self._root_log_location,
+                                  self.inner_log_fstructure)
+        if self._log_location.is_dir():
             pass
         else:
-            makedirs(self._log_location)
+            self._log_location.mkdir(parents=True, exist_ok=True)
         return self._log_location
 
     @property
@@ -526,7 +525,7 @@ class EasyLogger(_LogSpec, _InternalLoggerMethods):
             self.logger.setLevel(lvl)
             level_string = self.__class__.INT_TO_STR_LOGGER_LEVELS[self.logger.level]
 
-            log_path = join(self.log_location, '{}-{}-{}.log'.format(level_string,
+            log_path = Path(self.log_location, '{}-{}-{}.log'.format(level_string,
                                                                      self.project_name, self.timestamp))
 
             # Create a file handler for the logger, and specify the log file location
@@ -560,7 +559,8 @@ class EasyLogger(_LogSpec, _InternalLoggerMethods):
                              f"{list(self.__class__.INT_TO_STR_LOGGER_LEVELS)}, "
                              f"not {log_level_to_stream}")
 
-        self._internal_logger.info(f"creating StreamHandler() for {logging.getLevelName(log_level_to_stream)} messages to print to console")
+        self._internal_logger.info(
+            f"creating StreamHandler() for {logging.getLevelName(log_level_to_stream)} messages to print to console")
 
         use_one_time_filter = kwargs.get('use_one_time_filter', True)
         self._internal_logger.info(f"use_one_time_filter set to {use_one_time_filter}")
