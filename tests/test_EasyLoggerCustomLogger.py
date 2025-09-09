@@ -52,7 +52,7 @@ class TestEasyLoggerCustomLogger(unittest.TestCase):
         for level, method in self.log_methods.items():
             with self.subTest(level=level):
                 with patch.object(_EasyLoggerCustomLogger, '_print_msg',
-                                  wraps=_EasyLoggerCustomLogger._print_msg) as mock_print_msg:
+                                  wraps=self.logger._print_msg) as mock_print_msg:
                     method(log_msg, print_msg=self.should_print)
                     mock_print_msg.assert_called_once_with(log_msg, print_msg=self.should_print)
                     if not self.should_print:

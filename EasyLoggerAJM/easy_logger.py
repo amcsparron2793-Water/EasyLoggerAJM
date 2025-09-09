@@ -271,7 +271,7 @@ class EasyLogger(_LogSpec, _InternalLoggerMethods):
 
         if self.show_warning_logs_in_console:
             self._internal_logger.info('warning logs will be printed to console - creating stream handler')
-            self.create_stream_handler()
+            self.create_stream_handler(**kwargs)
 
         self.post_handler_setup()
 
@@ -589,5 +589,5 @@ class EasyLogger(_LogSpec, _InternalLoggerMethods):
 
 if __name__ == '__main__':
     el = EasyLogger(internal_verbose=True,
-                    show_warning_logs_in_console=True)
+                    show_warning_logs_in_console=True, log_level_to_stream=logging.INFO)
     el.logger.warning("this is an info message", print_msg=True)

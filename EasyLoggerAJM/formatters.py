@@ -22,7 +22,9 @@ class ColorizedFormatter(Formatter):
         if NO_COLORIZER:
             return
         else:
-            self.colorizer = Colorizer()
+            # since the dependency colorizer is still version 0.3.1, gray needs to be added as a custom color
+            self.colorizer = Colorizer(
+                custom_colors={self.__class__.GRAY: '\x1b[37m'})
         self.warning_color = self.__class__.YELLOW
         self.error_color = self.__class__.RED
         self.other_color = self.__class__.GRAY

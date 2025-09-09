@@ -1,4 +1,4 @@
-from logging import Logger
+from logging import Logger, getLevelName, StreamHandler
 
 
 class _EasyLoggerCustomLogger(Logger):
@@ -12,9 +12,26 @@ class _EasyLoggerCustomLogger(Logger):
      exception information, stack information, stack level, and extra information.
       Additional keyword arguments can be provided to control printing behavior.
     """
-    @staticmethod
-    def _print_msg(msg, **kwargs):
-        if kwargs.get('print_msg', False):
+
+    def _logger_should_print_normal_msg(self) -> bool:
+        """
+        Determines whether the logger should print normal messages based on the
+        logging levels of its StreamHandler instances.
+
+        :return: True if no StreamHandler is set to DEBUG or INFO level,
+                 otherwise False.
+        :rtype: bool
+        """
+        stream_handler_levels = [getLevelName(x.level) for x in
+                                 self.handlers
+                                 if type(x) is StreamHandler]
+        if stream_handler_levels:
+            if any([x for x in stream_handler_levels if x in ['DEBUG', 'INFO']]):
+                return False
+        return True
+
+    def _print_msg(self, msg, **kwargs):
+        if kwargs.get('print_msg', False) and self._logger_should_print_normal_msg():
             print(msg)
 
     def info(self, msg: object, *args: object, exc_info=None,
