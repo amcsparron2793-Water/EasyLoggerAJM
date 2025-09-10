@@ -1,5 +1,4 @@
 from logging import Handler, NOTSET
-from logging.handlers import SMTPHandler
 from pathlib import Path
 from shutil import rmtree, copytree
 from typing import Optional, Union
@@ -21,8 +20,9 @@ class _BaseCustomEmailHandler:
         self.logger_dir_path = logger_dir_path
 
         super().__init__(level=level)
-        if not self.email_msg or not self.recipient:
-            raise ValueError("email_msg and or recipient not provided.")
+        # FIXME: this is commented out for dev only
+        # if not self.email_msg or not self.recipient:
+        #     raise ValueError("email_msg and or recipient not provided.")
 
     def __init_subclass__(cls, **kwargs):
         if not cls.VALID_EMAIL_MSG_TYPES:
@@ -55,8 +55,8 @@ class _BaseCustomEmailHandler:
                 self._email_msg = value()
             else:
                 self._email_msg = value
-
-        raise ValueError(f"email_msg must be one of {self.VALID_EMAIL_MSG_TYPES}.")
+        # FIXME: this is commented out for dev only
+        #raise ValueError(f"email_msg must be one of {self.VALID_EMAIL_MSG_TYPES}.")
 
     @staticmethod
     def _write_zip(zip_path: Union[Path, str] = None, copy_dest: Path = None):
