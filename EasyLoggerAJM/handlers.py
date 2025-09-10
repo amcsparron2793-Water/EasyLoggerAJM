@@ -99,3 +99,15 @@ class OutlookEmailHandler(_BaseCustomEmailHandler, Handler):
             self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
         except Exception as e:
             print(f"Error sending email: {e}")
+
+
+# TODO: What else needs to be done here?
+class GMailHandler(_BaseCustomEmailHandler, SMTPHandler):
+    def __init__(self, fromaddr, subject,
+                 email_msg, logger_dir_path, recipient: Union[str, list],
+                 mailhost='smtp.gmail.com', credentials=None, secure=None,
+                 timeout=5.0, **kwargs):
+        raise NotImplementedError("still VERY in progress!")
+        super().__init__(email_msg, logger_dir_path, recipient, **kwargs)
+        SMTPHandler.__init__(self, mailhost, fromaddr, self.recipient,
+                             subject, credentials, secure, timeout)
