@@ -7,20 +7,23 @@ from zipfile import ZipFile
 from EasyLoggerAJM import InvalidEmailMsgType
 
 
-class _BaseCustomEmailHandler:
+class _BaseCustomEmailHandler(Handler):
     VALID_EMAIL_MSG_TYPES = []
     ERROR_TEMPLATE = "Error sending email: {error_msg}"
 
-    def __init__(self, email_msg, logger_dir_path, recipient: Union[str, list],
-                 project_name='default_project_name',
+    def __init__(self, email_msg, logger_dir_path: Union[str, Path], recipient: Union[str, list], project_name='default_project_name',
                  **kwargs):
+        super().__init__()
         self._email_msg = None
         self._recipient = None
 
         self.email_msg = email_msg  # kwargs.pop('email_msg', None)
         self.recipient = recipient
         self.project_name = project_name
-        self.logger_dir_path = logger_dir_path
+        if isinstance(logger_dir_path, str):
+            self.logger_dir_path = Path(logger_dir_path)
+        elif isinstance(logger_dir_path, Path):
+            self.logger_dir_path = logger_dir_path
 
         if not self.email_msg or not self.recipient:
             raise ValueError("email_msg and or recipient not provided.")
@@ -48,12 +51,12 @@ class _BaseCustomEmailHandler:
             raise ValueError("email_msg not provided.")
 
         if isinstance(value, tuple(self.VALID_EMAIL_MSG_TYPES)):
-            if callable(self._email_msg):
+            if callable(value):
                 self._email_msg = value()
             else:
                 self._email_msg = value
         if (self.__class__.VALID_EMAIL_MSG_TYPES
-                and len(self.__class__.VALID_EMAIL_MSG_TYPES) > 0):
+                and len(self.__class__.VALID_EMAIL_MSG_TYPES) <= 0):
             raise InvalidEmailMsgType(
                 valid_msg_types=self.__class__.VALID_EMAIL_MSG_TYPES,
                 given_value=type(value))
@@ -82,7 +85,7 @@ class _BaseCustomEmailHandler:
         zip_to_attach.unlink(missing_ok=True)
 
 
-class OutlookEmailHandler(_BaseCustomEmailHandler, Handler):
+class OutlookEmailHandler(_BaseCustomEmailHandler):
     VALID_EMAIL_MSG_TYPES = []
 
     def __init_subclass__(cls, **kwargs):

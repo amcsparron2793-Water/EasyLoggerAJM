@@ -431,13 +431,21 @@ class _HandlerInitializer(_LogSpec):
         if use_one_time_filter:
             self._internal_logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
 
+    def _create_handler_instance(self, handler_to_create, handler_args, **kwargs):
+        if handler_args is not None and isinstance(handler_to_create, type):
+            instance = handler_to_create(**handler_args, **kwargs)
+            self._internal_logger.info(f"{handler_to_create.__class__.__name__} handler created")
+            self._internal_logger.debug(f"handler has the following args {dict(**handler_args, **kwargs)}")
+        else:
+            instance = handler_to_create
+            self._internal_logger.info(f"instance of {handler_to_create.__class__.__name__} handler detected, moving to set up")
+        return instance
+
     def create_other_handlers(self, handler_to_create: Union[type(logging.Handler), set[type(logging.Handler)]] = None,
                               handler_args: Optional[dict] = None, **kwargs):
-        if handler_to_create and callable(handler_to_create):
-            self._internal_logger.info(f"creating {handler_to_create.__name__} handler")
-            instance = handler_to_create(**handler_args, **kwargs)
-            self._internal_logger.info(f"{handler_to_create.__name__} handler created")
-            self._internal_logger.debug(f"handler has the following args {dict(**handler_args, **kwargs)}")
+        if handler_to_create and (callable(handler_to_create) or isinstance(handler_to_create, logging.Handler)):
+            self._internal_logger.info(f"creating {handler_to_create.__class__.__name__} handler")
+            instance = self._create_handler_instance(handler_to_create, handler_args, **kwargs)
             self._setup_other_handler(instance, **kwargs)
         else:
             self._internal_logger.debug(f"no other handlers created")
@@ -447,7 +455,7 @@ class _HandlerInitializer(_LogSpec):
         self._internal_logger.info(f"handler level set to {logging.getLevelName(handler_instance.level)}")
 
         handler_instance.setFormatter(kwargs.get('formatter', self.formatter))
-        self._internal_logger.info(f"handler formatter set to {handler_instance.formatter}")
+        self._internal_logger.info(f"handler formatter set to {handler_instance.formatter.__class__.__name__}")
 
         self.logger.addHandler(handler_instance)
         self._internal_logger.info(f"{handler_instance.__class__.__name__} handler added")

@@ -8,7 +8,7 @@ class InvalidEmailMsgType(Exception):
         if msg:
             self.message = msg
         if not msg and valid_msg_types and given_value:
-            self.message = self.__class__.DEFAULT_MSG.format(valid_emails=valid_msg_types,
+            self.message = self.__class__.DEFAULT_MSG.format(valid_msg_types=valid_msg_types,
                                                              given_value=given_value)
         else:
             raise AttributeError(self.__class__._MISSING_ATTR_ERR_MSG)

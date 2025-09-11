@@ -6,7 +6,7 @@ logger with already set up generalized file handlers
 """
 import logging
 from datetime import datetime
-from typing import Union, List
+from typing import Union, List, Optional
 
 from EasyLoggerAJM import _EasyLoggerCustomLogger, ColorizedFormatter, NO_COLORIZER
 from EasyLoggerAJM.sub_initializers import (_PropertiesInitializer,
@@ -98,7 +98,7 @@ class EasyLoggerInitializer(_PropertiesInitializer,
             stream_formatter = kwargs.get('stream_formatter', logging.Formatter(self._chosen_format))
         return formatter, stream_formatter
 
-    def _initialize_internal_logger(self, internal_loggable_attrs:dict, **kwargs):
+    def _initialize_internal_logger(self, internal_loggable_attrs: dict, **kwargs):
         self._internal_logger = self._setup_internal_logger(verbose=kwargs.get('internal_verbose', False))
 
         self._log_attributes_internal(internal_loggable_attrs)
