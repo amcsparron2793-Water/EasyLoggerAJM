@@ -72,33 +72,31 @@ class TestEasyLogger(unittest.TestCase):
         self.assertEqual(dls_logger.inner_log_fstructure.split('/')[0], dls_logger.DAILY_LOG_SPEC_FORMAT)
 
     def test_given_dictionary_when_getting_log_spec_then_return_value(self):
-        self.easy_logger_default._log_spec = {'name': 'minute'}
+        self.easy_logger_default.log_spec = {'name': 'minute'}
         self.assertEqual(self.easy_logger_default.log_spec, self.easy_logger_default.LOG_SPECS['minute'])
 
     def test_given_incorrect_key_dictionary_when_getting_log_spec_then_raise_exception(self):
-        self.easy_logger_default._log_spec = {'wrong_key': 'minute'}
         with self.assertRaises(KeyError):
-            self.easy_logger_default.log_spec
+            self.easy_logger_default.log_spec = {'wrong_key': 'minute'}
 
     def test_given_string_when_getting_log_spec_then_return_value(self):
-        self.easy_logger_default._log_spec = 'minute'
+        self.easy_logger_default.log_spec = 'minute'
         self.assertEqual(self.easy_logger_default.log_spec, self.easy_logger_default.LOG_SPECS['minute'])
 
     def test_given_wrong_string_when_getting_log_spec_then_raise_exception(self):
-        self.easy_logger_default._log_spec = 'wrong_string'
         with self.assertRaises(AttributeError):
-            self.easy_logger_default.log_spec
+            self.easy_logger_default.log_spec = 'wrong_string'
 
     def test_given_wrong_case_string_when_getting_log_spec_then_make_lowercase(self):
-        self.easy_logger_default._log_spec = 'Minute'
+        self.easy_logger_default.log_spec = 'Minute'
         self.assertTrue(self.easy_logger_default.log_spec['name'].islower())
 
     def test_given_wrong_case_string_in_dict_when_getting_log_spec_then_make_lowercase(self):
-        self.easy_logger_default._log_spec = {'name': 'Minute'}
+        self.easy_logger_default.log_spec = {'name': 'Minute'}
         self.assertTrue(self.easy_logger_default.log_spec['name'].islower())
 
     def test_given_none_when_getting_log_spec_then_return_default_value(self):
-        self.easy_logger_default._log_spec = None
+        self.easy_logger_default.log_spec = None
         self.assertEqual(self.easy_logger_default.log_spec, self.easy_logger_default.LOG_SPECS['minute'])
 
 
