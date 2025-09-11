@@ -1,4 +1,5 @@
-from logging import Handler, NOTSET
+from logging import Handler
+from logging.handlers import SMTPHandler
 from pathlib import Path
 from shutil import rmtree, copytree
 from typing import Optional, Union
