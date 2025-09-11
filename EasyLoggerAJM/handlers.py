@@ -4,13 +4,16 @@ from shutil import rmtree, copytree
 from typing import Optional, Union
 from zipfile import ZipFile
 
+from EasyLoggerAJM import InvalidEmailMsgType
+
 
 class _BaseCustomEmailHandler:
     VALID_EMAIL_MSG_TYPES = []
+    ERROR_TEMPLATE = "Error sending email: {error_msg}"
 
     def __init__(self, email_msg, logger_dir_path, recipient: Union[str, list],
                  project_name='default_project_name',
-                 level=NOTSET, **kwargs):
+                 **kwargs):
         self._email_msg = None
         self._recipient = None
 
@@ -19,14 +22,8 @@ class _BaseCustomEmailHandler:
         self.project_name = project_name
         self.logger_dir_path = logger_dir_path
 
-        super().__init__(level=level)
-        # FIXME: this is commented out for dev only
-        # if not self.email_msg or not self.recipient:
-        #     raise ValueError("email_msg and or recipient not provided.")
-
-    def __init_subclass__(cls, **kwargs):
-        if not cls.VALID_EMAIL_MSG_TYPES:
-            raise ValueError("VALID_EMAIL_MSG_TYPES not defined.")
+        if not self.email_msg or not self.recipient:
+            raise ValueError("email_msg and or recipient not provided.")
 
     @property
     def recipient(self) -> str:
@@ -55,8 +52,11 @@ class _BaseCustomEmailHandler:
                 self._email_msg = value()
             else:
                 self._email_msg = value
-        # FIXME: this is commented out for dev only
-        #raise ValueError(f"email_msg must be one of {self.VALID_EMAIL_MSG_TYPES}.")
+        if (self.__class__.VALID_EMAIL_MSG_TYPES
+                and len(self.__class__.VALID_EMAIL_MSG_TYPES) > 0):
+            raise InvalidEmailMsgType(
+                valid_msg_types=self.__class__.VALID_EMAIL_MSG_TYPES,
+                given_value=type(value))
 
     @staticmethod
     def _write_zip(zip_path: Union[Path, str] = None, copy_dest: Path = None):
@@ -85,12 +85,18 @@ class _BaseCustomEmailHandler:
 class OutlookEmailHandler(_BaseCustomEmailHandler, Handler):
     VALID_EMAIL_MSG_TYPES = []
 
+    def __init_subclass__(cls, **kwargs):
+        if not cls.VALID_EMAIL_MSG_TYPES:
+            raise ValueError("VALID_EMAIL_MSG_TYPES not defined.")
+
+    def _prepare_email(self, record):
+        self.email_msg.To = self.recipient  # Replace with your recipient
+        self.email_msg.Subject = f"{record.levelname} in {self.project_name}"
+        self.email_msg.HTMLBody = self.format(record)
+
     def emit(self, record):
         try:
-            self.email_msg.To = self.recipient  # Replace with your recipient
-            self.email_msg.Subject = f"{record.levelname} in {self.project_name}"
-            self.email_msg.HTMLBody = self.format(record)
-
+            self._prepare_email(record)
             zip_to_attach, copy_dir_path = self._prep_logfile_attachment()
             if zip_to_attach and zip_to_attach.is_file():
                 self.email_msg.Attachments.Add(str(zip_to_attach.resolve()))
@@ -98,4 +104,4 @@ class OutlookEmailHandler(_BaseCustomEmailHandler, Handler):
             self.email_msg.Send()
             self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
         except Exception as e:
-            print(f"Error sending email: {e}")
+            print(self.__class__.ERROR_TEMPLATE.format(error_msg=e))
