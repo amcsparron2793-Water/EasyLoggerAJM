@@ -9,6 +9,8 @@ jobs:
   create_release:
     name: Create Release
     runs-on: ubuntu-latest
+    env:
+      token: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       # Checkout the repository
@@ -26,7 +28,6 @@ jobs:
             This is an automated release triggered by pushing the tag `${{ github.ref_name }}` to the master branch.
           draft: false
           prerelease: false
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       # (Optional) Upload assets to the release
       - name: Upload Release Asset
