@@ -14,6 +14,15 @@ class _EasyLoggerCustomLogger(Logger):
       Additional keyword arguments can be provided to control printing behavior.
     """
 
+    def __getattribute__(self, __name):
+        if __name in ['info', 'warning', 'error', 'debug', 'critical']:
+            try:
+                raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{__name}' "
+                                     f"use log() instead")
+            except AttributeError as e:
+                super().error(e, exc_info=True)
+        return object.__getattribute__(self, __name)
+
     def _raise_and_log_no_log_func(self, level: Union[int, str],
                                    message: str, **kwargs):
         try:
