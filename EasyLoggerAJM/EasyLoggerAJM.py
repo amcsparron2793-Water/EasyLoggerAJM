@@ -539,35 +539,3 @@ class EasyLogger:
         if use_one_time_filter:
             self.logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
 
-    # TODO: THIS IS COPY AND PASTED FROM AN AI ANSWER
-
-    # For advanced logging abstraction, you can create a custom logger class.
-    # This allows you to encapsulate all the logging behavior in one place
-    # and extend functionality like adding timestamps, formatting, or emailing logs.
-    def log(self, level, message):
-        log_levels = {
-            "info": self.logger.info,
-            "warning": self.logger.warning,
-            "error": self.logger.error,
-            "debug": self.logger.debug,
-        }
-
-        log_func = log_levels.get(level)
-        if log_func:
-            log_func(message)
-        else:
-            raise ValueError(f"Unknown log level: {level}")
-
-    def info(self, message):
-        self.log("info", message)
-
-    def warning(self, message):
-        self.log("warning", message)
-
-    def error(self, message):
-        self.log("error", message)
-
-    def debug(self, message):
-        self.log("debug", message)
-    # TODO: END THIS IS COPY AND PASTED FROM AN AI ANSWER
-
