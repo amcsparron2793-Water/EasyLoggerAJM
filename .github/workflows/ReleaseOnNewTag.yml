@@ -30,10 +30,10 @@ jobs:
           prerelease: false
 
       # (Optional) Upload assets to the release
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: <path-to-your-asset>  # Replace with the path to your file(s)
-          asset_name: <asset-name>         # Replace with the name of your asset
-          asset_content_type: application/zip
+      #- name: Upload Release Asset
+        #uses: actions/upload-release-asset@v1
+        #with:
+          #upload_url: ${{ steps.create_release.outputs.upload_url }}
+          #asset_path: <path-to-your-asset>  # Replace with the path to your file(s)
+          #asset_name: <asset-name>         # Replace with the name of your asset
+          #asset_content_type: application/zip
