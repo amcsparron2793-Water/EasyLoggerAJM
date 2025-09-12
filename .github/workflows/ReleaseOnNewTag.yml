@@ -10,7 +10,7 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     env:
-      token: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       # Checkout the repository
