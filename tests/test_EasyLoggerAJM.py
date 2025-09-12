@@ -1,26 +1,24 @@
 import unittest
 import re
 
-from EasyLoggerAJM.EasyLoggerAJM import EasyLogger
-from EasyLoggerAJM.EasyLoggerAJM import _EasyLoggerCustomLogger
+from EasyLoggerAJM.easy_logger import EasyLogger
+from EasyLoggerAJM.easy_logger import _EasyLoggerCustomLogger
 from logging import getLogger, Logger
+from test_EasyLoggerCustomLogger import TestEasyLoggerCustomLogger
 
 
 # noinspection PyStatementEffect
 class TestEasyLogger(unittest.TestCase):
     def setUp(self):
-        self.easy_logger_default = EasyLogger(project_name="TestProject", root_log_location="./test_logs")
+        test_attrs = {"project_name": "TestProject", "root_log_location": "./test_logs"}
+
+        self.easy_logger_default = EasyLogger(** test_attrs)
         self.test_dir = self.easy_logger_default._root_log_location
         self.default_logger = self.easy_logger_default.logger
 
-        self.easy_logger_non_default = EasyLogger(project_name="TestProject",
-                                                  root_log_location="./test_logs",
+        self.easy_logger_non_default = EasyLogger(** test_attrs,
                                                   logger=getLogger())
         self.non_default_logger = self.easy_logger_non_default.logger
-
-    @classmethod
-    def tearDownClass(cls):
-        print("DONT FORGET TO REMOVE TEST DIRS")
 
     def test_creation(self):
         self.assertIsInstance(self.easy_logger_default, EasyLogger)
@@ -42,14 +40,17 @@ class TestEasyLogger(unittest.TestCase):
         self.assertIsNotNone(self.easy_logger_default.inner_log_fstructure)
 
     def test_log_location(self):
-        self.assertTrue(re.match(f"{self.test_dir}.*", self.easy_logger_default.log_location))
+        posix_with_leading_dir = ('./' + self.easy_logger_default.log_location.as_posix())
+        self.assertTrue(re.match(f"{self.test_dir}.*", posix_with_leading_dir))
 
     def test_useLogger_creation(self):
         logger_cl = EasyLogger(project_name="TestProject2", root_log_location=f"{self.test_dir}2")
         logger = EasyLogger.UseLogger()
         self.assertIsInstance(logger, _EasyLoggerCustomLogger)
         self.assertEqual(logger_cl.project_name, "TestProject2")
-        self.assertTrue(re.match(f"{self.test_dir}2.*", logger_cl.log_location))
+
+        posix_with_leading_dir = ('./' + logger_cl.log_location.as_posix())
+        self.assertTrue(re.match(f"{self.test_dir}2.*", posix_with_leading_dir))
 
     def test_make_file_handlers(self):
         self.easy_logger_default.make_file_handlers()
@@ -71,36 +72,35 @@ class TestEasyLogger(unittest.TestCase):
         self.assertEqual(dls_logger.inner_log_fstructure.split('/')[0], dls_logger.DAILY_LOG_SPEC_FORMAT)
 
     def test_given_dictionary_when_getting_log_spec_then_return_value(self):
-        self.easy_logger_default._log_spec = {'name': 'minute'}
+        self.easy_logger_default.log_spec = {'name': 'minute'}
         self.assertEqual(self.easy_logger_default.log_spec, self.easy_logger_default.LOG_SPECS['minute'])
 
     def test_given_incorrect_key_dictionary_when_getting_log_spec_then_raise_exception(self):
-        self.easy_logger_default._log_spec = {'wrong_key': 'minute'}
         with self.assertRaises(KeyError):
-            self.easy_logger_default.log_spec
+            self.easy_logger_default.log_spec = {'wrong_key': 'minute'}
 
     def test_given_string_when_getting_log_spec_then_return_value(self):
-        self.easy_logger_default._log_spec = 'minute'
+        self.easy_logger_default.log_spec = 'minute'
         self.assertEqual(self.easy_logger_default.log_spec, self.easy_logger_default.LOG_SPECS['minute'])
 
     def test_given_wrong_string_when_getting_log_spec_then_raise_exception(self):
-        self.easy_logger_default._log_spec = 'wrong_string'
         with self.assertRaises(AttributeError):
-            self.easy_logger_default.log_spec
+            self.easy_logger_default.log_spec = 'wrong_string'
 
     def test_given_wrong_case_string_when_getting_log_spec_then_make_lowercase(self):
-        self.easy_logger_default._log_spec = 'Minute'
+        self.easy_logger_default.log_spec = 'Minute'
         self.assertTrue(self.easy_logger_default.log_spec['name'].islower())
 
     def test_given_wrong_case_string_in_dict_when_getting_log_spec_then_make_lowercase(self):
-        self.easy_logger_default._log_spec = {'name': 'Minute'}
+        self.easy_logger_default.log_spec = {'name': 'Minute'}
         self.assertTrue(self.easy_logger_default.log_spec['name'].islower())
 
     def test_given_none_when_getting_log_spec_then_return_default_value(self):
-        self.easy_logger_default._log_spec = None
+        self.easy_logger_default.log_spec = None
         self.assertEqual(self.easy_logger_default.log_spec, self.easy_logger_default.LOG_SPECS['minute'])
 
 
 if __name__ == "__main__":
     unittest.main()
+    TestEasyLoggerCustomLogger.tearDownClass()
 
