@@ -1,4 +1,5 @@
 from logging import Logger, getLevelName, StreamHandler
+from typing import Union
 
 
 class _EasyLoggerCustomLogger(Logger):
@@ -13,7 +14,36 @@ class _EasyLoggerCustomLogger(Logger):
       Additional keyword arguments can be provided to control printing behavior.
     """
 
-    def _logger_should_print_normal_msg(self) -> bool:
+    def _raise_and_log_no_log_func(self, level: Union[int, str],
+                                   message: str, **kwargs):
+        try:
+            raise ValueError(f"Unknown log level: {level}, defaulting to INFO")
+        except ValueError as e:
+            self.warning(e)
+            self.info(message, **kwargs)
+
+    def _get_log_func(self, level: Union[int, str]):
+        log_levels = {
+            "info": self.info,
+            "warning": self.warning,
+            "error": self.error,
+            "debug": self.debug,
+            "critical": self.critical,
+        }
+        if isinstance(level, str):
+            pass
+        elif isinstance(level, int):
+            level = getLevelName(level).lower()
+
+        log_func = log_levels.get(level)
+        return log_func
+
+    def _print_msg(self, msg, **kwargs):
+        if kwargs.get('print_msg', False) and self.logger_should_print_normal_msg:
+            print(msg)
+
+    @property
+    def logger_should_print_normal_msg(self) -> bool:
         """
         Determines whether the logger should print normal messages based on the
         logging levels of its StreamHandler instances.
@@ -30,9 +60,12 @@ class _EasyLoggerCustomLogger(Logger):
                 return False
         return True
 
-    def _print_msg(self, msg, **kwargs):
-        if kwargs.get('print_msg', False) and self._logger_should_print_normal_msg():
-            print(msg)
+    def log(self, level: Union[int, str], message: str, **kwargs):
+        log_func = self._get_log_func(level)
+        if log_func:
+            log_func(message, **kwargs)
+        else:
+            self._raise_and_log_no_log_func(level, message, **kwargs)
 
     def info(self, msg: object, *args: object, exc_info=None,
              stack_info: bool = False, stacklevel: int = 1,
