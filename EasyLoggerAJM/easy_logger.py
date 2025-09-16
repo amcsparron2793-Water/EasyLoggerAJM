@@ -6,7 +6,7 @@ logger with already set up generalized file handlers
 """
 import logging
 from datetime import datetime
-from typing import Union, List, Optional
+from typing import Union, List
 
 from EasyLoggerAJM import _EasyLoggerCustomLogger, ColorizedFormatter, NO_COLORIZER
 from EasyLoggerAJM.sub_initializers import (_PropertiesInitializer,
