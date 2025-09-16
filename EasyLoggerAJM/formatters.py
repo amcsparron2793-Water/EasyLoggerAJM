@@ -18,10 +18,9 @@ class ColorizedFormatter(Formatter):
         if NO_COLORIZER:
             return
         else:
-            # since the dependency colorizer is still version 0.3.1, gray needs to be added as a custom color
             self.colorizer = Colorizer()
 
-        self.debug_color = self.colorizer.__class__.GRAY
+        self.debug_color = self.colorizer.__class__.LIGHT_GRAY
         self.info_color = self.colorizer.__class__.WHITE
         self.warning_color = self.colorizer.__class__.YELLOW
         self.error_color = self.colorizer.__class__.RED
