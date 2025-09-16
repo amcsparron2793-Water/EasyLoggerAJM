@@ -224,13 +224,13 @@ class _PropertiesInitializer(_LogSpec):
         Returns:
             str: The name of the project.
         """
-        if not self._project_name:
-            self._project_name = __file__.split('\\')[-1].split(".")[0]
         return self._project_name
 
     @project_name.setter
     def project_name(self, value):
         self._project_name = value
+        if not self._project_name:
+            self._project_name = __file__.split('\\')[-1].split(".")[0]
         self._internal_logger.info(f"project_name set to {self._project_name}")
 
     # noinspection SpellCheckingInspection
