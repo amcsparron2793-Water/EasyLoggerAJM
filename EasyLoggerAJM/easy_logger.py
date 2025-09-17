@@ -216,17 +216,22 @@ class EasyLogger(EasyLoggerInitializer):
         """
         return cls(**kwargs, logger=kwargs.get('logger', None)).logger
 
-    def initialize_logger(self, logger=None) -> Union[logging.Logger, _EasyLoggerCustomLogger]:
+    def _set_logger_class(self, logger_class=_EasyLoggerCustomLogger, **kwargs):
+        self._internal_logger.info('no passed in logger detected')
+        logging.setLoggerClass(logger_class)
+        self._internal_logger.info(f'logger class set to \'{logger_class.__name__}\'')
+        # Create a logger with a specified name
+        self.logger = logging.getLogger(kwargs.get('logger_name', 'logger'))
+        self._internal_logger.info(f'logger created with name set to \'{self.logger.name}\'')
+        return self.logger
+
+    def initialize_logger(self, logger=None, **kwargs) -> Union[logging.Logger, _EasyLoggerCustomLogger]:
         if not logger:
-            self._internal_logger.info('no passed in logger detected')
-            logging.setLoggerClass(_EasyLoggerCustomLogger)
-            self._internal_logger.info('logger class set to _EasyLoggerCustomLogger')
-            # Create a logger with a specified name and make sure propagate is True
-            self.logger = logging.getLogger('logger')
+            self.logger = self._set_logger_class(**kwargs)
         else:
             self._internal_logger.info(f'passed in logger ({logger}) detected')
             self.logger: logging.getLogger = logger
-        self.logger.propagate = True
+        self.logger.propagate = kwargs.get('propagate', True)
         self._internal_logger.info('logger initialized')
         self._internal_logger.info(f'propagate set to {self.logger.propagate}')
         return self.logger
