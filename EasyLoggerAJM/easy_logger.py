@@ -251,4 +251,5 @@ class EasyLogger(EasyLoggerInitializer):
 if __name__ == '__main__':
     el = EasyLogger(internal_verbose=True,
                     show_warning_logs_in_console=True)#, log_level_to_stream=logging.INFO)
-    el.logger.info("this is an info message", print_msg=True)
+    el.logger.info("this is an info message",
+                   print_msg=True)
