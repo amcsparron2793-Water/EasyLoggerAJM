@@ -226,6 +226,19 @@ class EasyLogger(EasyLoggerInitializer):
         return self.logger
 
     def initialize_logger(self, logger=None, **kwargs) -> Union[logging.Logger, _EasyLoggerCustomLogger]:
+        """
+        :param logger: The logger instance to initialize. If None, a new logger will be created using the internal method.
+        :type logger: logging.Logger or None
+        :param kwargs: Additional parameters to configure the logger, such as propagate settings.
+        :type kwargs: dict
+        :return: The initialized logger instance.
+        :rtype: Union[logging.Logger, _EasyLoggerCustomLogger]
+
+        THIS IS HOW TO FIX ISSUE WITH MULTIPLE LOGGING INSTANCES, override with this:
+        self.logger = super().initialize_logger(logger=logger, **kwargs)
+        self.logger.propagate = False
+        return self.logger
+        """
         if not logger:
             self.logger = self._set_logger_class(**kwargs)
         else:
