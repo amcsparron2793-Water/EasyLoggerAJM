@@ -30,46 +30,60 @@ class _EasyLoggerCustomLogger(Logger):
                 return False
         return True
 
+    @staticmethod
+    def sanitize_msg(msg):
+        msg = msg.encode('cp1250', errors='ignore').decode('cp1250')
+        return msg
+
     def _print_msg(self, msg, **kwargs):
         if kwargs.get('print_msg', False) and self._logger_should_print_normal_msg():
             print(msg)
 
-    def info(self, msg: object, *args: object, exc_info=None,
-             stack_info: bool = False, stacklevel: int = 1,
-             extra=None, **kwargs):
-        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
-        super().info(msg, *args, exc_info=exc_info,
-                     stack_info=stack_info, stacklevel=stacklevel,
-                     extra=extra)
+    def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, **kwargs):
+        self._print_msg(msg, print_msg=kwargs.pop('print_msg', False))
+        msg = self.sanitize_msg(msg)
+        # noinspection PyProtectedMember
+        super()._log(level, msg, args,
+                     exc_info=exc_info,
+                     extra=extra, stack_info=stack_info,
+                     **kwargs)
 
-    def warning(self, msg: object, *args: object, exc_info=None,
-                stack_info: bool = False, stacklevel: int = 1,
-                extra=None, **kwargs):
-        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
-        super().warning(msg, *args, exc_info=exc_info,
-                        stack_info=stack_info, stacklevel=stacklevel,
-                        extra=extra)
-
-    def error(self, msg: object, *args: object, exc_info=None,
-              stack_info: bool = False, stacklevel: int = 1,
-              extra=None, **kwargs):
-        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
-        super().error(msg, *args, exc_info=exc_info,
-                      stack_info=stack_info, stacklevel=stacklevel,
-                      extra=extra)
-
-    def debug(self, msg: object, *args: object, exc_info=None,
-              stack_info: bool = False, stacklevel: int = 1,
-              extra=None, **kwargs):
-        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
-        super().debug(msg, *args, exc_info=exc_info,
-                      stack_info=stack_info, stacklevel=stacklevel,
-                      extra=extra)
-
-    def critical(self, msg: object, *args: object, exc_info=None,
-                 stack_info: bool = False, stacklevel: int = 1,
-                 extra=None, **kwargs):
-        self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
-        super().critical(msg, *args, exc_info=exc_info,
-                         stack_info=stack_info, stacklevel=stacklevel,
-                         extra=extra)
+    # def info(self, msg: object, *args: object, exc_info=None,
+    #          stack_info: bool = False, stacklevel: int = 1,
+    #          extra=None, **kwargs):
+    #     self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
+    #     super().info(msg, *args, exc_info=exc_info,
+    #                  stack_info=stack_info, stacklevel=stacklevel,
+    #                  extra=extra)
+    #
+    # def warning(self, msg: object, *args: object, exc_info=None,
+    #             stack_info: bool = False, stacklevel: int = 1,
+    #             extra=None, **kwargs):
+    #     self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
+    #     super().warning(msg, *args, exc_info=exc_info,
+    #                     stack_info=stack_info, stacklevel=stacklevel,
+    #                     extra=extra)
+    #
+    # def error(self, msg: object, *args: object, exc_info=None,
+    #           stack_info: bool = False, stacklevel: int = 1,
+    #           extra=None, **kwargs):
+    #     self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
+    #     super().error(msg, *args, exc_info=exc_info,
+    #                   stack_info=stack_info, stacklevel=stacklevel,
+    #                   extra=extra)
+    #
+    # def debug(self, msg: object, *args: object, exc_info=None,
+    #           stack_info: bool = False, stacklevel: int = 1,
+    #           extra=None, **kwargs):
+    #     self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
+    #     super().debug(msg, *args, exc_info=exc_info,
+    #                   stack_info=stack_info, stacklevel=stacklevel,
+    #                   extra=extra)
+    #
+    # def critical(self, msg: object, *args: object, exc_info=None,
+    #              stack_info: bool = False, stacklevel: int = 1,
+    #              extra=None, **kwargs):
+    #     self._print_msg(msg, print_msg=kwargs.get('print_msg', False))
+    #     super().critical(msg, *args, exc_info=exc_info,
+    #                      stack_info=stack_info, stacklevel=stacklevel,
+    #                      extra=extra)
