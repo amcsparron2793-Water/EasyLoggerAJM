@@ -413,7 +413,7 @@ class _HandlerInitializer(_LogSpec):
         self._internal_logger.info(f"use_one_time_filter set to {use_one_time_filter}")
 
         # Create a stream handler for the logger
-        stream_handler = logging.StreamHandler()
+        stream_handler = kwargs.get('stream_handler_instance', logging.StreamHandler())
         # Set the logging format for the stream handler
         stream_handler.setFormatter(self.stream_formatter)
         stream_handler.setLevel(log_level_to_stream)
