@@ -107,4 +107,10 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
             self.email_msg.Send()
             self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
         except Exception as e:
-            print(self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+            err_string = self.__class__.ERROR_TEMPLATE.format(error_msg=e)
+            print(err_string)
+            try:
+                if copy_dir_path and zip_to_attach:
+                    self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
+            except UnboundLocalError:
+                pass
