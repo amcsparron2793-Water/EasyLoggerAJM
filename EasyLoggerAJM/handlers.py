@@ -120,11 +120,14 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
                 self.email_msg.Send()
 
     def emit(self, record):
+        self._prepare_email(record)
         try:
             zip_to_attach, copy_dir_path = self._prep_and_attach_logfile()
         except Exception as e:
-            raise LogFilePrepError(e) from None
-        self._send_and_cleanup_attachments(copy_dir_path, zip_to_attach)
+            try:
+                raise LogFilePrepError(e) from None
+            finally:
+                self._send_and_cleanup_attachments(copy_dir_path, zip_to_attach)
 
 
 class StreamHandlerIgnoreExecInfo(StreamHandler):
