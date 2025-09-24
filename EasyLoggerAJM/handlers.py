@@ -128,6 +128,8 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
                 raise LogFilePrepError(e) from None
             finally:
                 self._send_and_cleanup_attachments(copy_dir_path, zip_to_attach)
+        finally:
+            self._send_and_cleanup_attachments(copy_dir_path, zip_to_attach)
 
 
 class StreamHandlerIgnoreExecInfo(StreamHandler):
