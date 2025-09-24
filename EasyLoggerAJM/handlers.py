@@ -1,4 +1,4 @@
-from logging import Handler, NOTSET
+from logging import Handler, StreamHandler
 from pathlib import Path
 from shutil import rmtree, copytree
 from typing import Optional, Union
@@ -114,3 +114,41 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
                     self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
             except UnboundLocalError:
                 pass
+
+
+class StreamHandlerIgnoreExecInfo(StreamHandler):
+    """
+    A custom logging StreamHandler that temporarily suppresses exception information when emitting a log record.
+
+    This handler is useful in scenarios where the exception information (`exc_info` and `exc_text`)
+    should not be included in the StreamHandler output but needs to remain intact in the original log record.
+
+    Methods:
+        emit(record):
+            Handles the log record emission by temporarily removing `exc_info` and `exc_text` attributes
+            from the log record (if present) and restoring them after the emission. If `exc_info` is not
+            present in the record, it simply calls the parent class's `emit` method.
+    """
+    def emit(self, record):
+        """
+        :param record: Log record to be processed and possibly emitted by the handler.
+        :type record: logging.LogRecord
+        :return: None
+        :rtype: None
+        """
+        # Temporarily remove exc_info and exc_text for this handler
+        if record.exc_info:
+            # Save the original exc_info
+            orig_exc_info = record.exc_info
+            orig_exc_text = getattr(record, 'exc_text', None)
+            record.exc_info = None
+            record.exc_text = None
+            try:
+                # Call the parent class emit method
+                super().emit(record)
+            finally:
+                # Restore the original exc_info back to the record
+                record.exc_info = orig_exc_info
+                record.exc_text = orig_exc_text
+        else:
+            super().emit(record)
