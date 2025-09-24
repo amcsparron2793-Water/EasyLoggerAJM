@@ -13,3 +13,6 @@ class InvalidEmailMsgType(Exception):
         else:
             raise AttributeError(self.__class__._MISSING_ATTR_ERR_MSG)
 
+
+class LogFilePrepError(Exception):
+    ...

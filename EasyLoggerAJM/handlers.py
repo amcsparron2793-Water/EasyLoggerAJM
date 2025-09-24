@@ -4,7 +4,7 @@ from shutil import rmtree, copytree
 from typing import Optional, Union
 from zipfile import ZipFile
 
-from EasyLoggerAJM import InvalidEmailMsgType
+from EasyLoggerAJM import InvalidEmailMsgType, LogFilePrepError
 
 
 class _BaseCustomEmailHandler(Handler):
@@ -97,23 +97,34 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
         self.email_msg.Subject = f"{record.levelname} in {self.project_name}"
         self.email_msg.HTMLBody = self.format(record)
 
-    def emit(self, record):
-        try:
-            self._prepare_email(record)
-            zip_to_attach, copy_dir_path = self._prep_logfile_attachment()
-            if zip_to_attach and zip_to_attach.is_file():
-                self.email_msg.Attachments.Add(str(zip_to_attach.resolve()))
+    def _prep_and_attach_logfile(self):
+        zip_to_attach, copy_dir_path = self._prep_logfile_attachment()
+        if zip_to_attach and zip_to_attach.is_file():
+            self.email_msg.Attachments.Add(str(zip_to_attach.resolve()))
+        return zip_to_attach, copy_dir_path
 
+    def _send_and_cleanup_attachments(self, copy_dir_path, zip_to_attach, **kwargs):
+        try:
             self.email_msg.Send()
             self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
         except Exception as e:
             err_string = self.__class__.ERROR_TEMPLATE.format(error_msg=e)
             print(err_string)
+        finally:
             try:
-                if copy_dir_path and zip_to_attach:
-                    self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
+                self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
             except UnboundLocalError:
                 pass
+            finally:
+                self.email_msg.Attachments.Clear()
+                self.email_msg.Send()
+
+    def emit(self, record):
+        try:
+            zip_to_attach, copy_dir_path = self._prep_and_attach_logfile()
+        except Exception as e:
+            raise LogFilePrepError(e) from None
+        self._send_and_cleanup_attachments(copy_dir_path, zip_to_attach)
 
 
 class StreamHandlerIgnoreExecInfo(StreamHandler):
