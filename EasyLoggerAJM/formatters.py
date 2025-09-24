@@ -35,6 +35,8 @@ class ColorizedFormatter(Formatter):
             return self.debug_color
         elif record.levelname == "INFO":
             return self.info_color
+        elif record.levelname == "CRITICAL":
+            return self.error_color
         else:
             return self.other_color
 

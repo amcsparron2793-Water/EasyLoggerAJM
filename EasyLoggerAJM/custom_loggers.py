@@ -69,6 +69,8 @@ class _EasyLoggerCustomLogger(Logger):
         :return: The sanitized message string.
         :rtype: str
         """
+        if issubclass(msg.__class__, Exception):
+            msg = str(msg)
         msg = msg.encode('cp1250', errors='ignore').decode('cp1250')
         return msg
 
