@@ -1,6 +1,7 @@
 from logging import Handler, StreamHandler
 from pathlib import Path
 from shutil import rmtree, copytree
+from sys import stderr
 from typing import Optional, Union
 from zipfile import ZipFile
 
@@ -103,21 +104,34 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
             self.email_msg.Attachments.Add(str(zip_to_attach.resolve()))
         return zip_to_attach, copy_dir_path
 
+    def _send_and_cleanup_try_finally_block(self, cdp, zta):
+        try:
+            self._cleanup_logfile_zip(cdp, zta)
+        except UnboundLocalError as e:
+            stderr.write(
+                self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+        finally:
+            try:
+                self.email_msg.Attachments.Clear()
+            except Exception as e:
+                stderr.write(
+                    self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+            finally:
+                try:
+                    self.email_msg.Send()
+                except Exception as e:
+                    stderr.write(
+                        self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+
     def _send_and_cleanup_attachments(self, copy_dir_path, zip_to_attach, **kwargs):
         try:
             self.email_msg.Send()
             self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
         except Exception as e:
-            err_string = self.__class__.ERROR_TEMPLATE.format(error_msg=e)
-            print(err_string)
+            stderr.write(
+                self.__class__.ERROR_TEMPLATE.format(error_msg=e))
         finally:
-            try:
-                self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
-            except UnboundLocalError:
-                pass
-            finally:
-                self.email_msg.Attachments.Clear()
-                self.email_msg.Send()
+            self._send_and_cleanup_try_finally_block(copy_dir_path, zip_to_attach)
 
     def emit(self, record):
         self._prepare_email(record)
