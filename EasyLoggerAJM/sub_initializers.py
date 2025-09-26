@@ -183,6 +183,15 @@ class _PropertiesInitializer(_LogSpec):
                 cls.STR_TO_INT_LOGGER_LEVELS["ERROR"]]
 
     def _set_initial_properties_value(self, **kwargs):
+        """
+        :param kwargs: A dictionary of keyword arguments used to initialize properties. Expected keys include:
+            - 'file_logger_levels': A list specifying logger levels for file logging.
+            - 'project_name': The name of the project.
+            - 'log_spec': The logging specification details.
+        :type kwargs: dict
+        :return: None
+        :rtype: None
+        """
         # properties
         self.file_logger_levels = kwargs.get('file_logger_levels', [])
         self.project_name = kwargs.get('project_name', None)
