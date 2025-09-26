@@ -163,7 +163,10 @@ class _InternalLoggerMethods:
 
 
 class _PropertiesInitializer(_LogSpec):
-    ROOT_LOG_LOCATION_DEFAULT = '../logs'
+    __PROJECT_ROOT = Path(__package__).resolve().parent.parent
+    __ROOT_PACKAGE_NAME = __package__.split('.')[0]
+    __PROJECT_NAME = __ROOT_PACKAGE_NAME
+    ROOT_LOG_LOCATION_DEFAULT = Path(__PROJECT_ROOT, 'logs').resolve()
 
     def __init__(self, root_log_location=None):
         self._file_logger_levels = None
@@ -239,7 +242,7 @@ class _PropertiesInitializer(_LogSpec):
     def project_name(self, value):
         self._project_name = value
         if not self._project_name:
-            self._project_name = __file__.split('\\')[-1].split(".")[0]
+            self._project_name = self.__class__.__PROJECT_NAME
         self._internal_logger.info(f"project_name set to {self._project_name}")
 
     # noinspection SpellCheckingInspection
