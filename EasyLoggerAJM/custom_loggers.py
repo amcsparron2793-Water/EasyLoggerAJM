@@ -1,4 +1,4 @@
-from logging import Logger, getLevelName, StreamHandler
+from logging import Logger, getLevelName, StreamHandler, FileHandler
 
 
 class _EasyLoggerCustomLogger(Logger):
@@ -52,7 +52,8 @@ class _EasyLoggerCustomLogger(Logger):
         """
         stream_handler_levels = [getLevelName(x.level) for x in
                                  self.handlers
-                                 if issubclass(type(x), StreamHandler)]
+                                 if (issubclass(type(x), StreamHandler)
+                                 and type(x) is not FileHandler)]
         if stream_handler_levels:
             if any([x for x in stream_handler_levels if x in ['DEBUG', 'INFO']]):
                 return False
