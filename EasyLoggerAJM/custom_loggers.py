@@ -1,4 +1,4 @@
-from logging import Logger, getLevelName, StreamHandler, FileHandler
+from logging import Logger, getLevelName, StreamHandler, FileHandler, Handler
 
 
 class _EasyLoggerCustomLogger(Logger):
@@ -41,7 +41,21 @@ class _EasyLoggerCustomLogger(Logger):
         Logs a critical message.
     """
 
-    def _logger_should_print_normal_msg(self) -> bool:
+    @staticmethod
+    def _stream_handler_subclass_exclusion_criteria(hnd: Handler) -> bool:
+        return type(hnd) is not FileHandler
+
+    def _handler_is_stream_handler_subclass(self, hnd: Handler) -> bool:
+        return (issubclass(type(hnd), StreamHandler)
+                and self._stream_handler_subclass_exclusion_criteria(hnd))
+
+    @property
+    def stream_handler_levels(self):
+        stream_handler_levels = [getLevelName(x.level) for x in self.handlers
+                                 if self._handler_is_stream_handler_subclass(x)]
+        return stream_handler_levels
+
+    def _logger_should_print_normal_msg(self, print_equivalents: tuple = ('DEBUG', 'INFO')) -> bool:
         """
         Determines whether the logger should print normal messages based on the
         logging levels of its StreamHandler instances.
@@ -49,13 +63,11 @@ class _EasyLoggerCustomLogger(Logger):
         :return: True if no StreamHandler is set to DEBUG or INFO level,
                  otherwise False.
         :rtype: bool
+        equivalent:
         """
-        stream_handler_levels = [getLevelName(x.level) for x in
-                                 self.handlers
-                                 if (issubclass(type(x), StreamHandler)
-                                 and type(x) is not FileHandler)]
-        if stream_handler_levels:
-            if any([x for x in stream_handler_levels if x in ['DEBUG', 'INFO']]):
+
+        if self.stream_handler_levels:
+            if any([x for x in self.stream_handler_levels if x in print_equivalents]):
                 return False
         return True
 

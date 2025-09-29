@@ -362,7 +362,7 @@ class _HandlerInitializer(_LogSpec):
         """
         pass
 
-    def make_file_handlers(self):
+    def make_file_handlers(self, **kwargs):
         """
         This method is used to create file handlers for the logger.
         It sets the logging level for each handler based on the file_logger_levels attribute.
@@ -386,7 +386,7 @@ class _HandlerInitializer(_LogSpec):
                                                                      self.project_name, self.timestamp))
 
             # Create a file handler for the logger, and specify the log file location
-            file_handler = logging.FileHandler(log_path)
+            file_handler = kwargs.get('file_handler_instance', logging.FileHandler(log_path))
             # Set the logging format for the file handler
             file_handler.setFormatter(self.formatter)
             file_handler.setLevel(self.logger.level)
