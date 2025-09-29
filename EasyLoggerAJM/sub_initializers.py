@@ -386,7 +386,7 @@ class _HandlerInitializer(_LogSpec):
                                                                      self.project_name, self.timestamp))
 
             # Create a file handler for the logger, and specify the log file location
-            file_handler = kwargs.get('file_handler_instance', logging.FileHandler(log_path))
+            file_handler = kwargs.get('file_handler_class', logging.FileHandler)(log_path)
             # Set the logging format for the file handler
             file_handler.setFormatter(self.formatter)
             file_handler.setLevel(self.logger.level)
