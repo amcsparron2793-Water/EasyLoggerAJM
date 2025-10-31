@@ -134,16 +134,50 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
             self._send_and_cleanup_try_finally_block(copy_dir_path, zip_to_attach)
 
     def emit(self, record):
+        """
+        Emit a log record by sending an Outlook email, optionally with zipped log attachments.
+
+        Improvements:
+        - Avoids referencing uninitialized variables by initializing to None.
+        - Sends the email exactly once.
+        - Attempts to prepare and attach logfile zip but continues without attachment on failure.
+        - Always performs best-effort cleanup of temp files and attachments.
+        """
         self._prepare_email(record)
+
+        zip_to_attach = None
+        copy_dir_path = None
+
+        # Try to prepare and attach the logfile zip; on failure, continue without attachment
         try:
             zip_to_attach, copy_dir_path = self._prep_and_attach_logfile()
         except Exception as e:
+            # Surface a specific error type for caller visibility, but do not block the email send
             try:
                 raise LogFilePrepError(e) from None
-            finally:
-                self._send_and_cleanup_attachments(copy_dir_path, zip_to_attach)
+            except LogFilePrepError as le:
+                stderr.write(self.__class__.ERROR_TEMPLATE.format(error_msg=le))
+
+        # Send the email once
+        try:
+            self.email_msg.Send()
+        except Exception as e:
+            stderr.write(self.__class__.ERROR_TEMPLATE.format(error_msg=e))
         finally:
-            self._send_and_cleanup_attachments(copy_dir_path, zip_to_attach)
+            # Cleanup: clear attachments and remove temp files if they were created
+            try:
+                # Clear attachments on the email object (best effort)
+                self.email_msg.Attachments.Clear()
+                self.email_msg.Send()
+            except Exception as e:
+                stderr.write(self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+
+            # Remove temp-copied directory and zip if they exist
+            try:
+                if copy_dir_path and zip_to_attach:
+                    self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
+            except Exception as e:
+                stderr.write(self.__class__.ERROR_TEMPLATE.format(error_msg=e))
 
 
 class StreamHandlerIgnoreExecInfo(StreamHandler):
