@@ -1,4 +1,6 @@
+from collections import deque
 from logging import Handler, StreamHandler
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 from shutil import rmtree, copytree
 from sys import stderr
@@ -12,7 +14,8 @@ class _BaseCustomEmailHandler(Handler):
     VALID_EMAIL_MSG_TYPES = []
     ERROR_TEMPLATE = "Error sending email: {error_msg}"
 
-    def __init__(self, email_msg, logger_dir_path: Union[str, Path], recipient: Union[str, list], project_name='default_project_name',
+    def __init__(self, email_msg, logger_dir_path: Union[str, Path],
+                 recipient: Union[str, list], project_name='default_project_name',
                  **kwargs):
         super().__init__()
         self._email_msg = None
@@ -216,3 +219,62 @@ class StreamHandlerIgnoreExecInfo(StreamHandler):
                 record.exc_text = orig_exc_text
         else:
             super().emit(record)
+
+
+class BufferedRecordHandler(Handler):
+    """Handler that stores the last N log records."""
+
+    def __init__(self, buffer_size=10):
+        super().__init__()
+        self.buffer = deque(maxlen=buffer_size)
+
+    def emit(self, record):
+        """Store the record in the buffer."""
+        self.buffer.append(record)
+
+    def get_last_message(self):
+        """Get the most recent message."""
+        if self.buffer:
+            return self.format(self.buffer[-1])
+        return None
+
+    def get_all_messages(self):
+        """Get all buffered messages."""
+        return [self.format(record) for record in self.buffer]
+
+    def get_last_n_messages(self, n):
+        """Get the last N messages."""
+        records = list(self.buffer)[-n:]
+        return [self.format(record) for record in records]
+
+
+class LastRecordHandler(Handler):
+    """Handler that stores the last log record."""
+
+    def __init__(self):
+        super().__init__()
+        self.last_record = None
+
+    def emit(self, record):
+        """Store the record without actually logging it anywhere."""
+        self.last_record = record
+
+    def get_last_message(self):
+        """Get the last logged message."""
+        if self.last_record:
+            return self.format(self.last_record)
+        return None
+
+    def get_last_record(self):
+        """Get the last LogRecord object."""
+        return self.last_record
+
+
+class HourlyRotatingFileHandler(TimedRotatingFileHandler):
+    def __init__(self, filename, when='H', interval=1, backupCount=24, **kwargs):
+        self.when = when
+        self.interval = interval
+        self.backupCount = backupCount
+        super().__init__(filename, when=self.when,
+                         interval=self.interval,
+                         backupCount=self.backupCount)
