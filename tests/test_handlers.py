@@ -3,7 +3,7 @@ import unittest
 from io import StringIO
 import sys
 
-from EasyLoggerAJM.handlers import StreamHandlerIgnoreExecInfo
+from EasyLoggerAJM.logger_parts.handlers import StreamHandlerIgnoreExecInfo
 
 
 class TestStreamHandlerIgnoreExecInfo(unittest.TestCase):
