@@ -15,6 +15,9 @@ class UncaughtLogger(EasyLogger):
 
         self.logger.handlers = self.setup_clean_handlers()
 
+    def __call__(self):
+        return self.logger
+
     def setup_clean_handlers(self):
         # Remove any file-based handlers that the base class may have attached; we only want email here
         # Keep non-file handlers (e.g., SMTP/email handlers) intact
