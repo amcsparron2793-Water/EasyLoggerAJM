@@ -1,4 +1,6 @@
-from EasyLoggerAJM import OutlookEmailHandler, EasyLogger
+from EasyLoggerAJM import EasyLogger
+from .filters import UncaughtExceptionFilter
+
 
 # FIXME: WIP
 class UncaughtLogger(EasyLogger):
@@ -6,7 +8,7 @@ class UncaughtLogger(EasyLogger):
         # Initialize base logger (may attach default handlers)
         kwargs.setdefault('log_spec', 'hourly')
         super().__init__(**kwargs)
-        self.emailer = PyEmailer(False, False, logger=self.logger)
+        # self.emailer = PyEmailer(False, False, logger=self.logger)
         # Ensure this special logger only handles uncaught exceptions and does not interfere with others
         self.logger.filters.clear()
         self.logger.addFilter(UncaughtExceptionFilter())
@@ -28,23 +30,10 @@ class UncaughtLogger(EasyLogger):
                 cleaned_handlers.append(h)
         return cleaned_handlers
 
-    def setup_email_handler(self, **kwargs):
-        email_msg = kwargs.pop('email_msg', self.emailer.email)
-        email_handler_class = kwargs.pop('email_handler_class', OutlookEmailHandler)
-        super().setup_email_handler(email_handler_class=email_handler_class,
-                                    logger_dir_path=self.log_location,
-                                    email_msg=email_msg, **kwargs)
-
     def _set_logger_class(self, **kwargs):
-
         return super()._set_logger_class(logger_name=kwargs.pop('logger_name',
                                                                 'uncaught_logger'), **kwargs)
 
     def make_file_handlers(self, **kwargs):
         """Override to disable creation of file handlers for the uncaught-exception logger."""
         return None
-
-    def _set_initial_properties_value(self, **kwargs):
-        # noinspection PyTypeChecker
-        kwargs['log_spec'] = 'hourly'
-        super()._set_initial_properties_value(**kwargs)
