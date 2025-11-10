@@ -7,7 +7,7 @@ from sys import stderr
 from typing import Optional, Union
 from zipfile import ZipFile
 
-from EasyLoggerAJM import InvalidEmailMsgType, LogFilePrepError
+from EasyLoggerAJM.backend import InvalidEmailMsgType, LogFilePrepError
 
 
 class _BaseCustomEmailHandler(Handler):

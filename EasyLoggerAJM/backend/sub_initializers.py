@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Union, Optional
 
-from EasyLoggerAJM import ConsoleOneTimeFilter
+from EasyLoggerAJM.logger_parts import ConsoleOneTimeFilter
 
 
 class _LogSpec:

@@ -3,7 +3,7 @@ import unittest
 from unittest import mock
 from unittest.mock import patch, Mock, MagicMock
 
-from EasyLoggerAJM import OutlookEmailHandler
+from EasyLoggerAJM.logger_parts import OutlookEmailHandler
 
 
 @unittest.skip("Skipping OutlookEmailHandler tests, they are not ready")
