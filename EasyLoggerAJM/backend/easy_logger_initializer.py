@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Union
 
 from EasyLoggerAJM.logger_parts import ColorizedFormatter
-from EasyLoggerAJM.sub_initializers import _PropertiesInitializer, _InternalLoggerMethods, _HandlerInitializer
+from EasyLoggerAJM.backend import _PropertiesInitializer, _InternalLoggerMethods, _HandlerInitializer
 
 
 class EasyLoggerInitializer(_PropertiesInitializer,
