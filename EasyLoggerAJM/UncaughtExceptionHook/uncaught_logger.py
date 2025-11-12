@@ -1,3 +1,5 @@
+from PyEmailerAJM import PyEmailer
+
 from EasyLoggerAJM import EasyLogger
 from .filters import UncaughtExceptionFilter
 
@@ -40,3 +42,9 @@ class UncaughtLogger(EasyLogger):
     def make_file_handlers(self, **kwargs):
         """Override to disable creation of file handlers for the uncaught-exception logger."""
         return None
+
+# TODO: update pyemailer dependency to latest version - then make this inherit PyEmailerLogger?
+class UncaughtLoggerEmail(UncaughtLogger):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.emailer = PyEmailer(False, False, logger=self.logger)

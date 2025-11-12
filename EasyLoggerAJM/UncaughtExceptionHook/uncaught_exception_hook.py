@@ -2,6 +2,7 @@ import sys
 from logging import basicConfig, error
 from pathlib import Path
 from . import UncaughtLogger
+from .uncaught_logger import UncaughtLoggerEmail
 from ..backend import LogFilePrepError
 
 
@@ -136,3 +137,17 @@ class UncaughtExceptionHook:
 
         self.wait_for_key_and_exit()
 
+
+class UncaughtExceptionHookEmail(UncaughtExceptionHook):
+    def __init__(self, logger_admins: list, **kwargs):
+        self.uncaught_logger_class = kwargs.pop('uncaught_logger_class', UncaughtLoggerEmail)
+        super().__init__(uncaught_logger_class=self.uncaught_logger_class, **kwargs)
+        self.uncaught_logger_class.setup_email_handler(email_subject='placeholder',
+                                                       logger_admins=logger_admins)
+    def _log_exception(self, exc_type, exc_value, tb):
+        self._check_and_initialize_new_email_file()
+
+        self.uc_logger.error(msg='Uncaught exception', exc_info=(exc_type, exc_value, tb),
+                             extra={'uncaught_exception': True})
+
+        self._check_and_initialize_new_email_file()
