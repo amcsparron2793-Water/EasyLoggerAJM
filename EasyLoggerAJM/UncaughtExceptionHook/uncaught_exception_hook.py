@@ -43,14 +43,11 @@ class UncaughtExceptionHook:
     UNCAUGHT_LOG_MSG = ('\n********\n if exception could be logged, it is logged in \'{log_file_name}\' '
                         'even if it does not appear in other log files \n********\n')
 
-    def __init__(self, logger_admins: list, **kwargs):
+    def __init__(self, **kwargs):
         self.uncaught_logger_class = kwargs.pop('uncaught_logger_class', UncaughtLogger)
         self.uncaught_logger_class = self.uncaught_logger_class(logger_name='UncaughtExceptionLogger',
                                    **kwargs)
         self.uc_logger = self.uncaught_logger_class()
-        # TODO: write setup email handler for uncaught logger class
-        self.uncaught_logger_class.setup_email_handler(email_subject='placeholder',
-                                                       logger_admins=logger_admins)
 
         self.log_file_name = Path('./unhandled_exception.log')
 
@@ -90,12 +87,8 @@ class UncaughtExceptionHook:
             print('could not log unhandled exception to file due to error.')
 
     def _log_exception(self, exc_type, exc_value, tb):
-        self._check_and_initialize_new_email_file()
-
         self.uc_logger.error(msg='Uncaught exception', exc_info=(exc_type, exc_value, tb),
                              extra={'uncaught_exception': True})
-
-        self._check_and_initialize_new_email_file()
 
     def show_exception_and_exit(self, exc_type, exc_value, tb):
         """
