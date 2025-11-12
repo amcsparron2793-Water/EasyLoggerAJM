@@ -39,6 +39,12 @@ class UncaughtExceptionHook:
            e. Displaying a console message to inform where the exception logs are stored.
            f. Prompting the user to press enter to exit the program.
            g. Exiting the application with a status code of -1.
+
+    Use example:
+        in __init__.py:
+        ueh = UncaughtExceptionHook()
+
+        sys.excepthook = ueh.show_exception_and_exit
     """
     UNCAUGHT_LOG_MSG = ('\n********\n if exception could be logged, it is logged in \'{log_file_name}\' '
                         'even if it does not appear in other log files \n********\n')
