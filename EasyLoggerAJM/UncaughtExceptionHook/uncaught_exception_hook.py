@@ -40,15 +40,43 @@ class UncaughtExceptionHook:
            f. Prompting the user to press enter to exit the program.
            g. Exiting the application with a status code of -1.
     """
+    UNCAUGHT_LOG_MSG = ('\n********\n if exception could be logged, it is logged in \'{log_file_name}\' '
+                        'even if it does not appear in other log files \n********\n')
+
     def __init__(self, logger_admins: list, **kwargs):
-        self.uncaught_logger_class = UncaughtLogger(logger_name='UncaughtExceptionLogger',
-                                                    **kwargs)
+        self.uncaught_logger_class = kwargs.pop('uncaught_logger_class', UncaughtLogger)
+        self.uncaught_logger_class = self.uncaught_logger_class(logger_name='UncaughtExceptionLogger',
+                                   **kwargs)
         self.uc_logger = self.uncaught_logger_class()
         # TODO: write setup email handler for uncaught logger class
         self.uncaught_logger_class.setup_email_handler(email_subject='placeholder',
                                                        logger_admins=logger_admins)
 
         self.log_file_name = Path('./unhandled_exception.log')
+
+    @staticmethod
+    def wait_for_key_and_exit():
+        try:
+            input("Press enter to exit.")
+        except (UnicodeDecodeError, EOFError, OSError):
+            # Fallback: use msvcrt on Windows or a simple delay on other platforms
+            try:
+                clear_screen()
+                import msvcrt
+                print("Press any key to exit...")
+                msvcrt.getch()
+            except ImportError:
+                # On non-Windows systems or if msvcrt fails, just wait briefly
+                import time
+                print("Exiting in 3 seconds...")
+                time.sleep(3)
+
+        sys.exit(-1)
+
+    def _check_and_initialize_new_email_file(self):
+        if hasattr(self.uncaught_logger_class, 'emailer') and hasattr(self.uncaught_logger_class.emailer,
+                                                                      'initialize_new_email'):
+            self.uncaught_logger_class.emailer.initialize_new_email()
 
     def _basic_log_to_file(self, exc_type, exc_value, tb):
         if self.log_file_name.is_file():
@@ -60,6 +88,14 @@ class UncaughtExceptionHook:
             error("Uncaught exception", exc_info=(exc_type, exc_value, tb))
         except Exception:
             print('could not log unhandled exception to file due to error.')
+
+    def _log_exception(self, exc_type, exc_value, tb):
+        self._check_and_initialize_new_email_file()
+
+        self.uc_logger.error(msg='Uncaught exception', exc_info=(exc_type, exc_value, tb),
+                             extra={'uncaught_exception': True})
+
+        self._check_and_initialize_new_email_file()
 
     def show_exception_and_exit(self, exc_type, exc_value, tb):
         """
@@ -94,25 +130,10 @@ class UncaughtExceptionHook:
             exit(-1)
 
         sys.__excepthook__(exc_type, exc_value, tb)
-        self.uncaught_logger_class.emailer.initialize_new_email()
-        self.uc_logger.error(msg='Uncaught exception', exc_info=(exc_type, exc_value, tb),
-                             extra={'uncaught_exception': True})
-        self.uncaught_logger_class.emailer.initialize_new_email()
-        print('\n********\n if exception could be logged, it is logged in \'./unhandled_exception.log\''
-              ' even if it does not appear in other log files \n********\n')
-        try:
-            input("Press enter to exit.")
-        except (UnicodeDecodeError, EOFError, OSError):
-            # Fallback: use msvcrt on Windows or a simple delay on other platforms
-            try:
-                clear_screen()
-                import msvcrt
-                print("Press any key to exit...")
-                msvcrt.getch()
-            except ImportError:
-                # On non-Windows systems or if msvcrt fails, just wait briefly
-                import time
-                print("Exiting in 3 seconds...")
-                time.sleep(3)
 
-        sys.exit(-1)
+        self._log_exception(exc_type, exc_value, tb)
+
+        print(self.__class__.UNCAUGHT_LOG_MSG.format(log_file_name=self.log_file_name))
+
+        self.wait_for_key_and_exit()
+
