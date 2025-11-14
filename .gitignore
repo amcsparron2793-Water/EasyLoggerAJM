@@ -5,3 +5,4 @@ __pycache__
 /*dist/
 /*.egg-info/
 /tests/test_logs*
+/tests/tmp_dummy.log
