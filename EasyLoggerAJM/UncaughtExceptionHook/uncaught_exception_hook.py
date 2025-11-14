@@ -1,8 +1,7 @@
 import sys
 from logging import basicConfig, error
 from pathlib import Path
-from . import UncaughtLogger
-from .uncaught_logger import UncaughtLoggerEmail
+from . import UncaughtLogger, UncaughtLoggerEmail
 from ..backend import LogFilePrepError
 
 
@@ -141,9 +140,19 @@ class UncaughtExceptionHook:
 class UncaughtExceptionHookEmail(UncaughtExceptionHook):
     def __init__(self, logger_admins: list, **kwargs):
         self.uncaught_logger_class = kwargs.pop('uncaught_logger_class', UncaughtLoggerEmail)
+
         super().__init__(uncaught_logger_class=self.uncaught_logger_class, **kwargs)
-        self.uncaught_logger_class.setup_email_handler(email_subject='placeholder',
-                                                       logger_admins=logger_admins)
+
+        self._validate_and_run_setup_email_method(logger_admins=logger_admins, **kwargs)
+
+    def _validate_and_run_setup_email_method(self, logger_admins: list, **kwargs):
+        if hasattr(self.uncaught_logger_class, 'setup_email_handler'):
+            self.uncaught_logger_class.setup_email_handler(email_subject='placeholder',
+                                                           logger_admins=logger_admins,
+                                                           **kwargs)
+        else:
+            raise AttributeError('setup_email_handler method not found in uncaught_logger_class')
+
     def _log_exception(self, exc_type, exc_value, tb):
         self._check_and_initialize_new_email_file()
 
