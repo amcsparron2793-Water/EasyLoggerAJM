@@ -1,6 +1,7 @@
 import logging
 import unittest
 from logging import FileHandler, StreamHandler
+from pathlib import Path
 from unittest.mock import Mock
 
 from EasyLoggerAJM.UncaughtExceptionHook.uncaught_logger import (
@@ -20,20 +21,31 @@ class DummyEmailer:
 
 
 class TestUncaughtLogger(unittest.TestCase):
+    UL_FOLDER_PATH = './test_logs_ul'
+
+    # @classmethod
+    # def tearDownClass(cls):
+    #     import shutil
+    #     try:
+    #         shutil.rmtree(Path(cls.UL_FOLDER_PATH))
+    #     except PermissionError as e:
+    #         print(e)
+    #         pass
+
     def test_callable_returns_logger(self):
         from EasyLoggerAJM.easy_logger import EasyLogger
         with unittest.mock.patch.object(EasyLogger, 'post_handler_setup', lambda self: None):
-            ul = UncaughtLogger(project_name='T', root_log_location='./test_logs_ul')
+            ul = UncaughtLogger(project_name='T', root_log_location=self.__class__.UL_FOLDER_PATH)
         self.assertIsInstance(ul(), logging.Logger)
 
     def test_make_file_handlers_disabled(self):
         from EasyLoggerAJM.easy_logger import EasyLogger
         with unittest.mock.patch.object(EasyLogger, 'post_handler_setup', lambda self: None):
-            ul = UncaughtLogger(project_name='T', root_log_location='./test_logs_ul')
+            ul = UncaughtLogger(project_name='T', root_log_location=self.__class__.UL_FOLDER_PATH)
         self.assertIsNone(ul.make_file_handlers())
 
     def test_setup_clean_handlers_removes_file_handlers_only(self):
-        ul = UncaughtLogger(project_name='T', root_log_location='./test_logs_ul')
+        ul = UncaughtLogger(project_name='T', root_log_location=self.__class__.UL_FOLDER_PATH)
         # attach one file handler and one stream handler
         fh = FileHandler(filename='tmp_dummy.log', encoding='utf-8')
         sh = StreamHandler()
@@ -48,10 +60,22 @@ class TestUncaughtLogger(unittest.TestCase):
 
 
 class TestUncaughtLoggerEmail(unittest.TestCase):
+    ULE_FOLDER_PATH = './test_logs_ule'
+
+    # @classmethod
+    # def tearDownClass(cls):
+    #     import shutil
+    #     try:
+    #         shutil.rmtree(Path(cls.ULE_FOLDER_PATH))
+    #     except PermissionError as e:
+    #         print(e)
+    #         pass
+
     def test_emailer_attached(self):
         from EasyLoggerAJM.easy_logger import EasyLogger
         with unittest.mock.patch.object(EasyLogger, 'post_handler_setup', lambda self: None):
-            ule = UncaughtLoggerEmail(emailer_class=DummyEmailer, project_name='T', root_log_location='./test_logs_ule')
+            ule = UncaughtLoggerEmail(emailer_class=DummyEmailer, project_name='T',
+                                      root_log_location=self.__class__.ULE_FOLDER_PATH)
         self.assertTrue(hasattr(ule, 'emailer'))
         self.assertIsInstance(ule.emailer, DummyEmailer)
         self.assertIsNotNone(ule.emailer.logger)

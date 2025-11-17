@@ -33,6 +33,8 @@ class UncaughtLogger(EasyLogger):
                 is_file = False
             if not is_file:
                 cleaned_handlers.append(h)
+            else:
+                self.logger.removeHandler(h)
         return cleaned_handlers
 
     def _set_logger_class(self, **kwargs):
