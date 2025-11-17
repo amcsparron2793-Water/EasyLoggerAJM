@@ -11,7 +11,8 @@ def get_property(prop, project):
 setup(
     name=project_name,
     version=get_property('__version__', project_name),
-    packages=['EasyLoggerAJM', 'EasyLoggerAJM.backend', 'EasyLoggerAJM.logger_parts'],
+    packages=['EasyLoggerAJM', 'EasyLoggerAJM.backend', 'EasyLoggerAJM.logger_parts',
+              'EasyLoggerAJM.UncaughtExceptionHook'],
     install_requires=['ColorizerAJM'],
     url='https://github.com/amcsparron2793-Water/EasyLoggerAJM',
     download_url=f'https://github.com/amcsparron2793-Water/EasyLoggerAJM/archive/refs/tags/{get_property("__version__", project_name)}.tar.gz',

@@ -57,6 +57,32 @@ class UncaughtExceptionHook:
 
         self.log_file_name = Path('./unhandled_exception.log')
 
+    @classmethod
+    def set_sys_excepthook(cls, **kwargs):
+        """
+        Set a custom system exception hook using the provided arguments.
+
+        This method creates an instance of the class using the given keyword
+        arguments and sets its `show_exception_and_exit` method as the global
+        system exception hook (`sys.excepthook`). This allows unhandled
+        exceptions to be handled by the custom logger or handler defined
+        within the class.
+
+        The primary purpose of this method is to replace the default Python
+        exception handling mechanism with a custom one that can log
+        exceptions, display detailed error messages, or execute additional
+        steps before termination of the program.
+
+        :param kwargs: Keyword arguments that will be passed to the class
+                       constructor.
+        :return: An instance of the class configured as the system exception
+                 hook.
+        :rtype: ClassName
+        """
+        c = cls(**kwargs)
+        sys.excepthook = c.show_exception_and_exit
+        return c
+
     @staticmethod
     def wait_for_key_and_exit():
         try:
