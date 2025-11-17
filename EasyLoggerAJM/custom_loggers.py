@@ -43,14 +43,21 @@ class _EasyLoggerCustomLogger(Logger):
 
     @staticmethod
     def _stream_handler_subclass_exclusion_criteria(hnd: Handler) -> bool:
+        """Return True if the handler should be considered a stream-like handler.
+
+        Excludes FileHandler explicitly so file-based handlers are not treated
+        as stream handlers in stream-related decisions.
+        """
         return type(hnd) is not FileHandler
 
     def _handler_is_stream_handler_subclass(self, hnd: Handler) -> bool:
+        """Determine whether a handler is a StreamHandler or its subclass (excluding FileHandler)."""
         return (issubclass(type(hnd), StreamHandler)
                 and self._stream_handler_subclass_exclusion_criteria(hnd))
 
     @property
     def stream_handler_levels(self):
+        """List the logging level names for all attached stream-like handlers."""
         stream_handler_levels = [getLevelName(x.level) for x in self.handlers
                                  if self._handler_is_stream_handler_subclass(x)]
         return stream_handler_levels

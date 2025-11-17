@@ -9,9 +9,26 @@ from EasyLoggerAJM.backend import _PropertiesInitializer, _InternalLoggerMethods
 class EasyLoggerInitializer(_PropertiesInitializer,
                             _InternalLoggerMethods,
                             _HandlerInitializer):
+    """High-level initializer that wires together properties, handlers, and formatting.
+
+    This mixin-style class composes lower-level initializers to provide a cohesive
+    setup for EasyLogger instances, including default formatters, timestamping,
+    and internal logger initialization.
+    """
     DEFAULT_FORMAT = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
 
     def __init__(self, project_name=None, chosen_format=DEFAULT_FORMAT, **kwargs):
+        """Initialize common logging properties, timestamp, and formatters.
+
+        :param project_name: Name of the project for folder and log identification.
+        :param chosen_format: Format string for log messages; defaults to DEFAULT_FORMAT.
+        :param kwargs: Additional configuration flags such as:
+            - root_log_location: Base folder for logs.
+            - no_stream_color: Disable colorized stream formatting.
+            - show_warning_logs_in_console: If True, create a console handler for warnings.
+            - internal_verbose: If True, the internal logger also logs to console.
+            - timestamp: Optional override for the timestamp used in log specs.
+        """
         super().__init__(root_log_location=kwargs.get('root_log_location', None))
         self._chosen_format = chosen_format
         self._no_stream_color = kwargs.get('no_stream_color', False)

@@ -4,7 +4,20 @@ from .filters import UncaughtExceptionFilter
 
 # FIXME: WIP
 class UncaughtLogger(EasyLogger):
+    """Specialized EasyLogger configured to handle only uncaught exceptions.
+
+    This logger:
+    - Forces a default 'hourly' log spec unless overridden.
+    - Removes any file-based handlers so it won't write application logs to disk.
+    - Adds a filter so only records flagged with extra={'uncaught_exception': True}
+      are allowed through.
+    """
     def __init__(self, **kwargs):
+        """Initialize the uncaught-exception logger.
+
+        Ensures appropriate filters are applied and file handlers are stripped
+        so that only non-file handlers (e.g., email) remain.
+        """
         # Initialize base logger (may attach default handlers)
         kwargs.setdefault('log_spec', 'hourly')
         super().__init__(**kwargs)
@@ -16,9 +29,15 @@ class UncaughtLogger(EasyLogger):
         self.logger.handlers = self.setup_clean_handlers()
 
     def __call__(self):
+        """Return the underlying configured logging.Logger instance."""
         return self.logger
 
     def setup_clean_handlers(self):
+        """Return handlers excluding file-based ones inherited from EasyLogger.
+
+        Keeps only handlers that are not FileHandler or TimedRotatingFileHandler
+        to avoid writing uncaught-exception logs to standard files.
+        """
         # Remove any file-based handlers that the base class may have attached; we only want email here
         # Keep non-file handlers (e.g., SMTP/email handlers) intact
         cleaned_handlers = []
@@ -34,9 +53,10 @@ class UncaughtLogger(EasyLogger):
         return cleaned_handlers
 
     def _set_logger_class(self, **kwargs):
+        """Use a distinct logger name for the uncaught-exception logger."""
         return super()._set_logger_class(logger_name=kwargs.pop('logger_name',
                                                                 'uncaught_logger'), **kwargs)
 
     def make_file_handlers(self, **kwargs):
-        """Override to disable creation of file handlers for the uncaught-exception logger."""
+        """Disable creation of file handlers for the uncaught-exception logger."""
         return None

@@ -1,3 +1,4 @@
+"""Convenience re-exports for logger handler/formatter/filter utilities."""
 from EasyLoggerAJM.logger_parts.handlers import (OutlookEmailHandler, StreamHandlerIgnoreExecInfo,
                                                  BufferedRecordHandler, LastRecordHandler, HourlyRotatingFileHandler)
 from EasyLoggerAJM.logger_parts.formatters import ColorizedFormatter, NO_COLORIZER

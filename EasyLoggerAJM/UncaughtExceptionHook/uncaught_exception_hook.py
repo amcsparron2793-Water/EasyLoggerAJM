@@ -6,6 +6,11 @@ from ..backend import LogFilePrepError
 
 
 def clear_screen():
+    """Clear the terminal/console screen on the current platform.
+
+    Uses 'cls' on Windows and 'clear' on POSIX systems. Intended only for
+    cosmetic use when prompting the user to exit after an uncaught exception.
+    """
     import os
     if os.name == 'nt':  # For Windows
         os.system('cls')
@@ -85,6 +90,14 @@ class UncaughtExceptionHook:
 
     @staticmethod
     def wait_for_key_and_exit():
+        """Prompt the user before exiting the process with a non-zero status.
+
+        Primary path uses input() to wait for Enter. If stdin is not usable
+        (e.g., UnicodeDecodeError/EOFError in some environments), on Windows a
+        fallback using msvcrt.getch() is attempted; otherwise a short timed
+        delay is used so the message can be seen before exit.
+        Always terminates the process with exit code -1.
+        """
         try:
             input("Press enter to exit.")
         except (UnicodeDecodeError, EOFError, OSError):
@@ -103,11 +116,25 @@ class UncaughtExceptionHook:
         sys.exit(-1)
 
     def _check_and_initialize_new_email_file(self):
+        """Initialize a fresh email draft for the uncaught-exception emailer, if present.
+
+        Some logger configurations attach an `emailer` object with a method
+        `initialize_new_email()`. If detected, this method invokes it so that
+        the next emitted record results in a new email rather than appending to
+        a prior one.
+        """
         if hasattr(self.uncaught_logger_class, 'emailer') and hasattr(self.uncaught_logger_class.emailer,
                                                                       'initialize_new_email'):
             self.uncaught_logger_class.emailer.initialize_new_email()
 
     def _basic_log_to_file(self, exc_type, exc_value, tb):
+        """Write a minimal error log with traceback to a local file.
+
+        Attempts to configure logging to write to './unhandled_exception.log' and
+        logs the provided exception triple. If an existing file is present, it
+        is removed first to avoid appending stale content. Errors during this
+        process are swallowed and a console message is printed instead.
+        """
         if self.log_file_name.is_file():
             self.log_file_name.unlink()
         else:
@@ -119,36 +146,25 @@ class UncaughtExceptionHook:
             print('could not log unhandled exception to file due to error.')
 
     def _log_exception(self, exc_type, exc_value, tb):
+        """Log the uncaught exception through the configured uncaught logger.
+
+        Attaches extra={'uncaught_exception': True} so filters/handlers can
+        route these records appropriately (e.g., to email).
+        """
         self.uc_logger.error(msg='Uncaught exception', exc_info=(exc_type, exc_value, tb),
                              extra={'uncaught_exception': True})
 
     def show_exception_and_exit(self, exc_type, exc_value, tb):
-        """
-        This code defines a function `show_exception_and_exit` which is used to handle uncaught exceptions in
-         a Python program. When an uncaught exception occurs, this function is called with the exception type,
-          exception value, and traceback as arguments.
+        """Handle an uncaught exception, report it, and terminate the process.
 
-        The function performs the following steps:
-
-        1. It imports the necessary modules: `basicConfig` and `error` from the `logging` module, and `Path` from the `pathlib` module.
-
-        2. It creates a `Path` object called `log_file_name` with the path './unhandled_exception.log'.
-
-        3. If the `log_file_name` already exists, it is deleted using the `unlink()` method. Otherwise, no action is taken.
-
-        4. It tries to configure the logging module to write the error messages to the `log_file_name`. The logging level is set to 'ERROR'.
-
-        5. If an exception occurs while configuring the logging, a message 'could not log unhandled exception due to error' is printed.
-
-        6. If the logging was successfully configured, an error message 'Uncaught exception' is logged using the `error()` method of the logging module. The exception information is passed using the `exc_info` parameter.
-
-        7. The `sys.__excepthook__` function is called with the exception type, exception value, and traceback. This will print the exception information to the console.
-
-        8. A message is printed to inform that if the exception could be logged, it is logged in './unhandled_exception.log' even if it does not appear in other log files.
-
-        9. The program waits for the user to press enter to exit.
-
-        10. Finally, the program exits with a status code of -1 using the `sys.exit()` function.
+        Behavior:
+        - If the exception type is LogFilePrepError, exit immediately with -1.
+        - Invoke the default sys.__excepthook__ to display the traceback.
+        - Log the exception via the configured uncaught logger with
+          extra={'uncaught_exception': True} so filters/handlers can route it
+          (e.g., to email). A minimal file log helper exists but is disabled by default.
+        - Inform the user where a basic log would be written.
+        - Prompt the user before exiting with status -1.
         """
         # self._basic_log_to_file(exc_type, exc_value, tb)
         if exc_type == LogFilePrepError:

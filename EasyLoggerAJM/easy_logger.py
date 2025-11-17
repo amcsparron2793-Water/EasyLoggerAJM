@@ -99,6 +99,10 @@ class EasyLogger(EasyLoggerInitializer):
 
     @staticmethod
     def _get_level_handler_string(handlers: List[logging.Handler]) -> str:
+        """Return a compact string summary of handlers and their levels.
+
+        Example: "StreamHandler - WARNING, FileHandler - INFO"
+        """
         return ', '.join([' - '.join((x.__class__.__name__, logging.getLevelName(x.level)))
                           for x in handlers])
 
@@ -123,6 +127,11 @@ class EasyLogger(EasyLoggerInitializer):
         return cls(**kwargs, logger=kwargs.get('logger', None)).logger
 
     def _set_logger_class(self, logger_class=_EasyLoggerCustomLogger, **kwargs):
+        """Create and return a logger using the provided logger_class.
+
+        Sets the global logger class, creates a named logger (defaults to 'logger'),
+        and logs internal diagnostics during setup.
+        """
         self._internal_logger.info('no passed in logger detected')
         logging.setLoggerClass(logger_class)
         self._internal_logger.info(f'logger class set to \'{logger_class.__name__}\'')
@@ -156,6 +165,12 @@ class EasyLogger(EasyLoggerInitializer):
         return self.logger
 
     def post_handler_setup(self):
+        """Finalize logger configuration after handlers are attached.
+
+        - Resets the logger level to DEBUG so it receives all messages.
+        - Emits an info line listing handler types and levels.
+        - Warns if a colorizer is expected but not available.
+        """
         # set the logger level back to DEBUG, so it handles all messages
         self.logger.setLevel(10)
         self._internal_logger.info(f'logger level set back to {self.logger.level}')
