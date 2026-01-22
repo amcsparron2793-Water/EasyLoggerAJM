@@ -163,10 +163,10 @@ class _InternalLoggerMethods:
 
 
 class _PropertiesInitializer(_LogSpec):
-    __PROJECT_ROOT = Path(__package__).resolve().parent.parent
-    __ROOT_PACKAGE_NAME = __package__.split('.')[0]
-    __PROJECT_NAME = __ROOT_PACKAGE_NAME
-    ROOT_LOG_LOCATION_DEFAULT = Path(__PROJECT_ROOT, 'logs').resolve()
+    _PROJECT_ROOT = Path(__package__).resolve().parent.parent
+    _ROOT_PACKAGE_NAME = __package__.split('.')[0]
+    _PROJECT_NAME = _ROOT_PACKAGE_NAME
+    ROOT_LOG_LOCATION_DEFAULT = Path(_PROJECT_ROOT, 'logs').resolve()
 
     def __init__(self, root_log_location=None):
         self._file_logger_levels = None
@@ -223,7 +223,8 @@ class _PropertiesInitializer(_LogSpec):
             self._file_logger_levels = self.get_default_file_logger_levels()
         else:
             self._file_logger_levels = self._validate_file_logger_levels(value)
-        self._internal_logger.info(f"file_logger_levels set to {self._file_logger_levels}")
+        if hasattr(self, "_internal_logger"):
+            self._internal_logger.info(f"file_logger_levels set to {self._file_logger_levels}")
 
     @property
     def project_name(self):
@@ -242,8 +243,9 @@ class _PropertiesInitializer(_LogSpec):
     def project_name(self, value):
         self._project_name = value
         if not self._project_name:
-            self._project_name = self.__class__.__PROJECT_NAME
-        self._internal_logger.info(f"project_name set to {self._project_name}")
+            self._project_name = self.__class__._PROJECT_NAME
+        if hasattr(self, "_internal_logger"):
+            self._internal_logger.info(f"project_name set to {self._project_name}")
 
     # noinspection SpellCheckingInspection
     @property
@@ -453,7 +455,7 @@ class _HandlerInitializer(_LogSpec):
             self._internal_logger.info(f"instance of {handler_to_create.__class__.__name__} handler detected, moving to set up")
         return instance
 
-    def create_other_handlers(self, handler_to_create: Union[type(logging.Handler), set[type(logging.Handler)]] = None,
+    def create_other_handlers(self, handler_to_create: type(logging.Handler) = None,
                               handler_args: Optional[dict] = None, **kwargs):
         if handler_to_create and (callable(handler_to_create) or isinstance(handler_to_create, logging.Handler)):
             self._internal_logger.info(f"creating {handler_to_create.__class__.__name__} handler")
