@@ -1,12 +1,10 @@
-import logging
 from datetime import datetime
-from typing import Union, Callable, Tuple
-
-from EasyLoggerAJM.logger_parts import ColorizedFormatter
-from EasyLoggerAJM.backend import _PropertiesInitializer, _InternalLoggerMethods, _HandlerInitializer
+from EasyLoggerAJM.backend import (_PropertiesInitializer, _InternalLoggerMethods,
+                                   _HandlerInitializer, _FormatterInitializer)
 
 
 class EasyLoggerInitializer(_PropertiesInitializer,
+                            _FormatterInitializer,
                             _InternalLoggerMethods,
                             _HandlerInitializer):
     """High-level initializer that wires together properties, handlers, and formatting.
@@ -15,9 +13,9 @@ class EasyLoggerInitializer(_PropertiesInitializer,
     setup for EasyLogger instances, including default formatters, timestamping,
     and internal logger initialization.
     """
-    DEFAULT_FORMAT = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
 
-    def __init__(self, project_name=None, chosen_format=DEFAULT_FORMAT, **kwargs):
+    # noinspection PyMissingConstructor
+    def __init__(self, project_name=None, **kwargs):
         """Initialize common logging properties, timestamp, and formatters.
 
         :param project_name: Name of the project for folder and log identification.
@@ -29,9 +27,9 @@ class EasyLoggerInitializer(_PropertiesInitializer,
             - internal_verbose: If True, the internal logger also logs to console.
             - timestamp: Optional override for the timestamp used in log specs.
         """
-        super().__init__(root_log_location=kwargs.get('root_log_location', None))
-        self._chosen_format = chosen_format
-        self._no_stream_color = kwargs.get('no_stream_color', False)
+        kwargs.setdefault('root_log_location', None)
+        kwargs.setdefault('project_name', project_name)
+        self._initialize_subclasses(**kwargs)
 
         self.show_warning_logs_in_console = kwargs.get('show_warning_logs_in_console', False)
 
@@ -41,13 +39,38 @@ class EasyLoggerInitializer(_PropertiesInitializer,
         kwargs_passed_in = kwargs
         self._initialize_internal_logger(kwargs_passed_in, **kwargs)
 
-        self._set_initial_properties_value(project_name=project_name, **kwargs)
+        self._set_initial_properties_value(**kwargs)
 
         # noinspection PyTypeChecker
         self.timestamp = kwargs.get('timestamp', self.log_spec['timestamp'])
         self._set_timestamp_if_different()
 
-        self.formatter, self.stream_formatter = self._setup_formatters(**kwargs)
+        self.formatter, self.stream_formatter = self.setup_formatters(**kwargs)
+
+    def _initialize_subclasses(self, **kwargs):
+        """
+        Initializes all necessary subclasses for the object. This method invokes the
+        constructors of `_PropertiesInitializer`, `_FormatterInitializer`, and
+        `_HandlerInitializer` to ensure proper setup of their respective functionalities.
+
+        :param kwargs: Arbitrary keyword arguments that are passed to the constructors
+                       of `_PropertiesInitializer` and `_FormatterInitializer`.
+        :type kwargs: dict
+        :return: None
+        :rtype: None
+        """
+        _PropertiesInitializer.__init__(
+            self,
+            **kwargs
+        )
+        _FormatterInitializer.__init__(
+            self,
+            **kwargs
+        )
+        _HandlerInitializer.__init__(
+            self,
+            **kwargs
+        )
 
     def set_timestamp(self, **kwargs):
         """
@@ -98,38 +121,6 @@ class EasyLoggerInitializer(_PropertiesInitializer,
         """Set the timestamp if it's different from the log specification."""
         if self.timestamp != self._log_spec.get('timestamp'):
             self.timestamp = self.set_timestamp(timestamp=self.timestamp)
-
-    def validate_formatter_type(self, formatter: Union[logging.Formatter, Callable]) -> logging.Formatter:
-        if callable(formatter):
-            formatter = formatter(self._chosen_format)
-            if not isinstance(formatter, logging.Formatter):
-                raise TypeError("formatter must return an instance of logging.Formatter")
-        else:
-            raise TypeError("formatter must be a callable or an instance of logging.Formatter")
-        return formatter
-
-    def _instantiate_formatter(self, formatter: Union[logging.Formatter, Callable]) -> logging.Formatter:
-        if isinstance(formatter, logging.Formatter):
-            pass
-        else:
-            formatter = self.validate_formatter_type(formatter)
-        return formatter
-
-    def _setup_stream_formatter(self, **kwargs) -> Union[ColorizedFormatter, logging.Formatter]:
-        if not self._no_stream_color:
-            stream_formatter = kwargs.get('stream_formatter',
-                                          ColorizedFormatter(self._chosen_format))
-        else:
-            stream_formatter = kwargs.get('stream_formatter',
-                                          logging.Formatter(self._chosen_format))
-        return self._instantiate_formatter(stream_formatter)
-
-    def _setup_formatters(self, **kwargs) -> Tuple[logging.Formatter, Union[ColorizedFormatter, logging.Formatter]]:
-        formatter = kwargs.get('formatter', logging.Formatter(self._chosen_format))
-        formatter = self._instantiate_formatter(formatter)
-
-        stream_formatter = self._setup_stream_formatter()
-        return formatter, stream_formatter
 
     def _initialize_internal_logger(self, internal_loggable_attrs: dict, **kwargs):
         self._internal_logger = self._setup_internal_logger(verbose=kwargs.get('internal_verbose', False))

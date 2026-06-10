@@ -2,9 +2,9 @@ import logging
 from abc import abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Union, Optional
+from typing import Union, Optional, Callable, Tuple
 
-from EasyLoggerAJM.logger_parts import ConsoleOneTimeFilter
+from EasyLoggerAJM.logger_parts import ConsoleOneTimeFilter, ColorizedFormatter
 
 
 class _LogSpec:
@@ -168,7 +168,7 @@ class _PropertiesInitializer(_LogSpec):
     _PROJECT_NAME = _ROOT_PACKAGE_NAME
     ROOT_LOG_LOCATION_DEFAULT = Path(_PROJECT_ROOT, 'logs').resolve()
 
-    def __init__(self, root_log_location=None):
+    def __init__(self, root_log_location=None, **kwargs):
         self._file_logger_levels = None
         self._project_name = None
         self._log_spec = None
@@ -313,7 +313,7 @@ class _PropertiesInitializer(_LogSpec):
 
 class _HandlerInitializer(_LogSpec):
     # noinspection PyTypeChecker
-    def __init__(self):
+    def __init__(self, **kwargs):
         self._internal_logger: logging.Logger = None
         self.logger: logging.Logger = None
         self.formatter: logging.Formatter = None
@@ -473,3 +473,43 @@ class _HandlerInitializer(_LogSpec):
 
         self.logger.addHandler(handler_instance)
         self._internal_logger.info(f"{handler_instance.__class__.__name__} handler added")
+
+
+class _FormatterInitializer:
+    DEFAULT_FORMAT = '%(asctime)s | %(name)s | %(levelname)s | %(message)s'
+
+    def __init__(self, chosen_format: str = None, **kwargs):
+        self._chosen_format = chosen_format or self.__class__.DEFAULT_FORMAT
+        self._no_stream_color = kwargs.get('no_stream_color', False)
+
+    def validate_formatter_type(self, formatter: Union[logging.Formatter, Callable]) -> logging.Formatter:
+        if callable(formatter):
+            formatter = formatter(self._chosen_format)
+            if not isinstance(formatter, logging.Formatter):
+                raise TypeError("formatter must return an instance of logging.Formatter")
+        else:
+            raise TypeError("formatter must be a callable or an instance of logging.Formatter")
+        return formatter
+
+    def _instantiate_formatter(self, formatter: Union[logging.Formatter, Callable]) -> logging.Formatter:
+        if isinstance(formatter, logging.Formatter):
+            pass
+        else:
+            formatter = self.validate_formatter_type(formatter)
+        return formatter
+
+    def _setup_stream_formatter(self, **kwargs) -> Union[ColorizedFormatter, logging.Formatter]:
+        if not self._no_stream_color:
+            stream_formatter = kwargs.get('stream_formatter',
+                                          ColorizedFormatter(self._chosen_format))
+        else:
+            stream_formatter = kwargs.get('stream_formatter',
+                                          logging.Formatter(self._chosen_format))
+        return self._instantiate_formatter(stream_formatter)
+
+    def setup_formatters(self, **kwargs) -> Tuple[logging.Formatter, Union[ColorizedFormatter, logging.Formatter]]:
+        formatter = kwargs.get('formatter', logging.Formatter(self._chosen_format))
+        formatter = self._instantiate_formatter(formatter)
+
+        stream_formatter = self._setup_stream_formatter()
+        return formatter, stream_formatter
