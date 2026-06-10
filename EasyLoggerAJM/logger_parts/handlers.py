@@ -97,9 +97,13 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
             raise ValueError("VALID_EMAIL_MSG_TYPES not defined.")
 
     def _prepare_email(self, record):
-        self.email_msg.To = self.recipient  # Replace with your recipient
-        self.email_msg.Subject = f"{record.levelname} in {self.project_name}"
-        self.email_msg.HTMLBody = self.format(record)
+        try:
+            self.email_msg.To = self.recipient  # Replace with your recipient
+            self.email_msg.Subject = f"{record.levelname} in {self.project_name}"
+            self.email_msg.HTMLBody = self.format(record)
+        except Exception as e:
+            stderr.write(
+                self.__class__.ERROR_TEMPLATE.format(error_msg=e))
 
     def _prep_and_attach_logfile(self):
         zip_to_attach, copy_dir_path = self._prep_logfile_attachment()
