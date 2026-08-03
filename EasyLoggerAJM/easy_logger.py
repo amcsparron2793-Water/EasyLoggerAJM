@@ -5,7 +5,7 @@ logger with already set up generalized file handlers
 
 """
 import logging
-from typing import Union, List
+from typing import Union, List, Optional, Callable
 
 from EasyLoggerAJM import _EasyLoggerCustomLogger
 from EasyLoggerAJM.logger_parts import NO_COLORIZER
@@ -182,8 +182,56 @@ class EasyLogger(EasyLoggerInitializer):
         # print("logger initialized")
 
 
+class SetupLogger:
+    """
+    Provides methods to configure and manage a logging mechanism. This class
+    ensures that a logger is properly initialized and allows fallback
+    configuration for cases where no logger handlers are defined.
+
+    :ivar log_level_to_stream: Default log level for streaming logs as a string.
+    :type log_level_to_stream: str
+    :ivar basic_config_level: Default log level for basic configuration as a string.
+    :type basic_config_level: str
+    """
+    DEFAULT_CUSTOM_LOGGER = None
+
+    def __new__(cls, *args, **kwargs):
+        raise TypeError("SetupLogger cannot be instantiated. Use SetupLogger.setup_logger(...) instead.")
+
+    @classmethod
+    def setup_logger(cls, **kwargs) -> Union[logging.Logger, Callable]:
+        kwargs.setdefault('log_level_to_stream', 'INFO')
+        return_instance = kwargs.pop('return_instance', False)
+        logger = kwargs.pop('logger', None)
+        if not logger:
+            # TODO: make this its own method?
+            if cls.DEFAULT_CUSTOM_LOGGER is not None:
+                if return_instance:
+                    return cls.DEFAULT_CUSTOM_LOGGER(**kwargs)
+                elif isinstance(cls.DEFAULT_CUSTOM_LOGGER, Callable):
+                    logger = cls.DEFAULT_CUSTOM_LOGGER(**kwargs)()
+        logger = cls._check_fallback_logger_config(logger=logger, **kwargs)
+        return logger
+
+    @classmethod
+    def _check_fallback_logger_config(cls, default_logger_name: Optional[str] = None, **kwargs) -> logging.Logger:
+        default_logger_name = default_logger_name or cls.__name__
+        logger = kwargs.get('logger', None)
+        basic_config_level = kwargs.pop('basic_config_level', 'DEBUG')
+
+        if not logger:
+            logger = logging.getLogger(default_logger_name)
+        if logger.name == default_logger_name or not logger.hasHandlers():
+            logging.basicConfig(level=basic_config_level)
+            logger.info(f'using basic config with level: {basic_config_level}')
+        else:
+            logger.info(f"logger: {logger.name} already has handlers, not using basicConfig")
+        logger.info(f"Using logger: {logger.name}")
+        return logger
+
+
 if __name__ == '__main__':
-    el = EasyLogger(internal_verbose=True,
-                    show_warning_logs_in_console=True)#, log_level_to_stream=logging.INFO)
-    el.logger.info("this is an info message",
-                   print_msg=True)
+    el = SetupLogger.setup_logger(internal_verbose=True,
+                                  return_instance=False,
+                                  show_warning_logs_in_console=True)  #, log_level_to_stream=logging.INFO)
+    print(type(el))
