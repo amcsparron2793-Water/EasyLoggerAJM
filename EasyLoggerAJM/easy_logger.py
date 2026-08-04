@@ -5,7 +5,7 @@ logger with already set up generalized file handlers
 
 """
 import logging
-from typing import Union, List, Optional, Callable
+from typing import Union, List, Optional, Callable, Any
 
 from EasyLoggerAJM import _EasyLoggerCustomLogger
 from EasyLoggerAJM.logger_parts import NO_COLORIZER
@@ -199,18 +199,29 @@ class SetupLogger:
         raise TypeError("SetupLogger cannot be instantiated. Use SetupLogger.setup_logger(...) instead.")
 
     @classmethod
-    def setup_logger(cls, **kwargs) -> Union[logging.Logger, Callable]:
+    def setup_logger(cls, **kwargs) -> Union[logging.Logger, Callable, Any]:
         kwargs.setdefault('log_level_to_stream', 'INFO')
         return_instance = kwargs.pop('return_instance', False)
         logger = kwargs.pop('logger', None)
+        instance_not_callable = False
+
         if not logger:
             # TODO: make this its own method?
             if cls.DEFAULT_CUSTOM_LOGGER is not None:
                 if return_instance:
                     return cls.DEFAULT_CUSTOM_LOGGER(**kwargs)
-                elif isinstance(cls.DEFAULT_CUSTOM_LOGGER, Callable):
+                # this is how to check if a class's INSTANCE is callable
+                # ie does the logger class return a real Logger
+                elif "__call__" in cls.DEFAULT_CUSTOM_LOGGER.__dict__:
                     logger = cls.DEFAULT_CUSTOM_LOGGER(**kwargs)()
+                else:
+                    instance_not_callable = True
         logger = cls._check_fallback_logger_config(logger=logger, **kwargs)
+        if instance_not_callable:
+            logger.warning("Attempted to return logger by calling an "
+                           "INSTANCE of DEFAULT_CUSTOM_LOGGER, "
+                           "but it is not callable. "
+                           "Defaulted to failback logging")
         return logger
 
     @classmethod
