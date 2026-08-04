@@ -1,7 +1,7 @@
-import pytest
 import logging
 from EasyLoggerAJM.logger_parts import ColorizedFormatter, NO_COLORIZER
 from EasyLoggerAJM.logger_parts.formatters import CleanANSIFileFormatter
+
 
 def test_colorized_formatter():
     formatter = ColorizedFormatter("%(levelname)s: %(message)s")

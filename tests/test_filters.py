@@ -1,6 +1,6 @@
-import pytest
 import logging
 from EasyLoggerAJM.logger_parts import ConsoleOneTimeFilter
+
 
 def test_console_one_time_filter():
     filt = ConsoleOneTimeFilter()
