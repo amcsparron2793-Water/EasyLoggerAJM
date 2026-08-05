@@ -199,6 +199,20 @@ class SetupLogger:
         raise TypeError("SetupLogger cannot be instantiated. Use SetupLogger.setup_logger(...) instead.")
 
     @classmethod
+    def _setup_default_custom_logger(cls, return_instance=False, **kwargs):
+        instance_not_callable = False
+        logger = None
+        if return_instance:
+            return cls.DEFAULT_CUSTOM_LOGGER(**kwargs)
+        # this is how to check if a class's INSTANCE is callable
+        # i.e., does the logger class return a real Logger
+        elif "__call__" in cls.DEFAULT_CUSTOM_LOGGER.__dict__:
+            logger = cls.DEFAULT_CUSTOM_LOGGER(**kwargs)()
+        else:
+            instance_not_callable = True
+        return logger, instance_not_callable
+
+    @classmethod
     def setup_logger(cls, **kwargs) -> Union[logging.Logger, Callable, Any]:
         kwargs.setdefault('log_level_to_stream', 'INFO')
         return_instance = kwargs.pop('return_instance', False)
@@ -206,16 +220,9 @@ class SetupLogger:
         instance_not_callable = False
 
         if not logger:
-            # TODO: make this its own method?
             if cls.DEFAULT_CUSTOM_LOGGER is not None:
-                if return_instance:
-                    return cls.DEFAULT_CUSTOM_LOGGER(**kwargs)
-                # this is how to check if a class's INSTANCE is callable
-                # ie does the logger class return a real Logger
-                elif "__call__" in cls.DEFAULT_CUSTOM_LOGGER.__dict__:
-                    logger = cls.DEFAULT_CUSTOM_LOGGER(**kwargs)()
-                else:
-                    instance_not_callable = True
+                logger, instance_not_callable = cls._setup_default_custom_logger(
+                    return_instance=return_instance, **kwargs)
         logger = cls._check_fallback_logger_config(logger=logger, **kwargs)
         if instance_not_callable:
             logger.warning("Attempted to return logger by calling an "
