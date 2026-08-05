@@ -196,7 +196,12 @@ class SetupLogger:
     DEFAULT_CUSTOM_LOGGER = None
 
     def __new__(cls, *args, **kwargs):
-        raise TypeError("SetupLogger cannot be instantiated. Use SetupLogger.setup_logger(...) instead.")
+        raise TypeError("SetupLogger cannot be instantiated. "
+                        "Use SetupLogger.setup_logger(...) instead.")
+
+    @classmethod
+    def _is_default_logger_instance_callable(cls):
+        return "__call__" in cls.DEFAULT_CUSTOM_LOGGER.__dict__
 
     @classmethod
     def _setup_default_custom_logger(cls, return_instance=False, **kwargs):
@@ -206,7 +211,7 @@ class SetupLogger:
             return cls.DEFAULT_CUSTOM_LOGGER(**kwargs)
         # this is how to check if a class's INSTANCE is callable
         # i.e., does the logger class return a real Logger
-        elif "__call__" in cls.DEFAULT_CUSTOM_LOGGER.__dict__:
+        elif cls._is_default_logger_instance_callable():
             logger = cls.DEFAULT_CUSTOM_LOGGER(**kwargs)()
         else:
             instance_not_callable = True
