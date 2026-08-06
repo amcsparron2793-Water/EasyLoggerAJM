@@ -5,11 +5,11 @@ logger with already set up generalized file handlers
 
 """
 import logging
-from typing import Union, List, Optional, Callable, Any
+from typing import Union, List, Optional, Callable, Any, Tuple
 
 from EasyLoggerAJM import _EasyLoggerCustomLogger
 from EasyLoggerAJM.logger_parts import NO_COLORIZER
-from EasyLoggerAJM.backend import EasyLoggerInitializer
+from EasyLoggerAJM.backend import EasyLoggerInitializer, InstanceNotCallableError
 
 
 class EasyLogger(EasyLoggerInitializer):
@@ -184,14 +184,15 @@ class EasyLogger(EasyLoggerInitializer):
 
 class SetupLogger:
     """
-    Provides methods to configure and manage a logging mechanism. This class
-    ensures that a logger is properly initialized and allows fallback
-    configuration for cases where no logger handlers are defined.
+    Handles logger setup and configuration for the application.
 
-    :ivar log_level_to_stream: Default log level for streaming logs as a string.
-    :type log_level_to_stream: str
-    :ivar basic_config_level: Default log level for basic configuration as a string.
-    :type basic_config_level: str
+    This class provides methods to set up a logger and configure it appropriately.
+    It is designed as a utility class that cannot be instantiated directly. Instead,
+    you use the provided `setup_logger` class method to configure and return a logger.
+
+    :ivar DEFAULT_CUSTOM_LOGGER: A customizable logger class or callable. If set, the
+        setup methods will utilize it for logger configuration.
+    :type DEFAULT_CUSTOM_LOGGER: Optional[Callable or Any]
     """
     DEFAULT_CUSTOM_LOGGER = None
 
@@ -201,16 +202,17 @@ class SetupLogger:
 
     @classmethod
     def _is_default_logger_instance_callable(cls):
+        """this is how to check if a class's INSTANCE is callable
+        i.e., does the logger class return a real Logger"""
         return "__call__" in cls.DEFAULT_CUSTOM_LOGGER.__dict__
 
+    # noinspection PyCallingNonCallable
     @classmethod
-    def _setup_default_custom_logger(cls, return_instance=False, **kwargs):
+    def _setup_default_custom_logger(cls, return_instance=False, **kwargs) -> Tuple[Union[logging.Logger, Any], bool]:
         instance_not_callable = False
         logger = None
         if return_instance:
-            return cls.DEFAULT_CUSTOM_LOGGER(**kwargs)
-        # this is how to check if a class's INSTANCE is callable
-        # i.e., does the logger class return a real Logger
+            return cls.DEFAULT_CUSTOM_LOGGER(**kwargs), instance_not_callable
         elif cls._is_default_logger_instance_callable():
             logger = cls.DEFAULT_CUSTOM_LOGGER(**kwargs)()
         else:
@@ -228,12 +230,19 @@ class SetupLogger:
             if cls.DEFAULT_CUSTOM_LOGGER is not None:
                 logger, instance_not_callable = cls._setup_default_custom_logger(
                     return_instance=return_instance, **kwargs)
+                # FIXME: put this in _setup_default_custom_logger?
+                if return_instance:
+                    if hasattr(logger, 'logger'):
+                        logger.logger.debug("Return instance is True."
+                                            "Returning instance of custom logger class "
+                                            "which has a Logger attribute")
+                    return logger
         logger = cls._check_fallback_logger_config(logger=logger, **kwargs)
         if instance_not_callable:
-            logger.warning("Attempted to return logger by calling an "
-                           "INSTANCE of DEFAULT_CUSTOM_LOGGER, "
-                           "but it is not callable. "
-                           "Defaulted to failback logging")
+            try:
+                raise InstanceNotCallableError
+            except InstanceNotCallableError as e:
+                logger.error(e.message)
         return logger
 
     @classmethod
@@ -244,6 +253,10 @@ class SetupLogger:
 
         if not logger:
             logger = logging.getLogger(default_logger_name)
+
+        if not isinstance(logger, logging.Logger):
+            raise TypeError(f"logger must be an instance of {logging.Logger}, not {type(logger)}")
+
         if logger.name == default_logger_name or not logger.hasHandlers():
             logging.basicConfig(level=basic_config_level)
             logger.info(f'using basic config with level: {basic_config_level}')

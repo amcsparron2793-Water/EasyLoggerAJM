@@ -16,3 +16,14 @@ class InvalidEmailMsgType(Exception):
 
 class LogFilePrepError(Exception):
     ...
+
+
+class InstanceNotCallableError(Exception):
+    DEFAULT_MSG = ("Attempted to return logger by calling an INSTANCE of DEFAULT_CUSTOM_LOGGER,"
+                   " but it is not callable. Defaulted to failback logging")
+
+    def __init__(self, msg=None, **kwargs):
+        if msg:
+            self.message = msg
+        else:
+            self.message = self.__class__.DEFAULT_MSG
