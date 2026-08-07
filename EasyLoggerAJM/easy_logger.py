@@ -193,8 +193,13 @@ class SetupLogger:
     :ivar DEFAULT_CUSTOM_LOGGER: A customizable logger class or callable. If set, the
         setup methods will utilize it for logger configuration.
     :type DEFAULT_CUSTOM_LOGGER: Optional[Callable or Any]
+    :ivar RETURN_INSTANCE_WARNING_TEXT: A warning text to be displayed when a custom logger instance is returned.
+    :type RETURN_INSTANCE_WARNING_TEXT: str
     """
-    DEFAULT_CUSTOM_LOGGER = None
+    DEFAULT_CUSTOM_LOGGER = EasyLogger
+    RETURN_INSTANCE_WARNING_TEXT = ("Return instance is True. "
+                                    "Returning instance of custom logger "
+                                    "class which has a 'logger' (type logging.Logger) attribute")
 
     def __new__(cls, *args, **kwargs):
         raise TypeError("SetupLogger cannot be instantiated. "
@@ -208,11 +213,14 @@ class SetupLogger:
 
     # noinspection PyCallingNonCallable
     @classmethod
-    def _setup_default_custom_logger(cls, return_instance=False, **kwargs) -> Tuple[Union[logging.Logger, Any], bool]:
+    def _setup_default_custom_logger(cls, return_wrapper_instance=False, **kwargs) -> Tuple[Union[logging.Logger, Any], bool]:
         instance_not_callable = False
         logger = None
-        if return_instance:
-            return cls.DEFAULT_CUSTOM_LOGGER(**kwargs), instance_not_callable
+        if return_wrapper_instance:
+            logger = cls.DEFAULT_CUSTOM_LOGGER(**kwargs)
+            if hasattr(logger, 'logger'):
+                getattr(logger, 'logger').warning(cls.RETURN_INSTANCE_WARNING_TEXT)
+            return logger, instance_not_callable
         elif cls._is_default_logger_instance_callable():
             logger = cls.DEFAULT_CUSTOM_LOGGER(**kwargs)()
         else:
@@ -220,29 +228,40 @@ class SetupLogger:
         return logger, instance_not_callable
 
     @classmethod
+    def _validate_inst_to_return(cls, return_wrapper_instance, logger):
+        # noinspection PyTypeChecker
+        if return_wrapper_instance and isinstance(logger, cls.DEFAULT_CUSTOM_LOGGER):
+            return logger
+        elif return_wrapper_instance and not isinstance(logger, cls.DEFAULT_CUSTOM_LOGGER):
+            raise TypeError(f"logger must be an instance of "
+                            f"{cls.DEFAULT_CUSTOM_LOGGER}, if return_instance is True")
+        return None
+
+    @staticmethod
+    def _raise_and_log_not_callable(logger: logging.Logger):
+        try:
+            raise InstanceNotCallableError
+        except InstanceNotCallableError as e:
+            logger.error(e.message)
+
+    @classmethod
     def setup_logger(cls, **kwargs) -> Union[logging.Logger, Callable, Any]:
         kwargs.setdefault('log_level_to_stream', 'INFO')
-        return_instance = kwargs.pop('return_instance', False)
+        return_wrapper_instance = kwargs.pop('return_wrapper_instance', False)
         logger = kwargs.pop('logger', None)
         instance_not_callable = False
 
         if not logger:
             if cls.DEFAULT_CUSTOM_LOGGER is not None:
                 logger, instance_not_callable = cls._setup_default_custom_logger(
-                    return_instance=return_instance, **kwargs)
-                # FIXME: put this in _setup_default_custom_logger?
-                if return_instance:
-                    if hasattr(logger, 'logger'):
-                        logger.logger.debug("Return instance is True."
-                                            "Returning instance of custom logger class "
-                                            "which has a Logger attribute")
+                    return_wrapper_instance=return_wrapper_instance, **kwargs)
+                logger = cls._validate_inst_to_return(return_wrapper_instance, logger)
+                if logger:
                     return logger
+
         logger = cls._check_fallback_logger_config(logger=logger, **kwargs)
         if instance_not_callable:
-            try:
-                raise InstanceNotCallableError
-            except InstanceNotCallableError as e:
-                logger.error(e.message)
+            cls._raise_and_log_not_callable(logger)
         return logger
 
     @classmethod
@@ -268,6 +287,6 @@ class SetupLogger:
 
 if __name__ == '__main__':
     el = SetupLogger.setup_logger(internal_verbose=True,
-                                  return_instance=False,
+                                  return_wrapper_instance=False,
                                   show_warning_logs_in_console=True)  #, log_level_to_stream=logging.INFO)
     print(type(el))
