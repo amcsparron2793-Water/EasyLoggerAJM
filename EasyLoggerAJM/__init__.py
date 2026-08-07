@@ -6,8 +6,8 @@ convenience of importers.
 from EasyLoggerAJM.backend import errs, sub_initializers, EasyLoggerInitializer
 from EasyLoggerAJM.custom_loggers import _EasyLoggerCustomLogger
 from EasyLoggerAJM.logger_parts import handlers, formatters, filters
-from EasyLoggerAJM.easy_logger import EasyLogger
+from EasyLoggerAJM.easy_logger import EasyLogger, SetupLogger
 
-__all__ = ['_EasyLoggerCustomLogger', 'EasyLogger',
+__all__ = ['_EasyLoggerCustomLogger', 'EasyLogger', 'SetupLogger',
            'sub_initializers', 'EasyLoggerInitializer',
            'errs', 'handlers', 'formatters', 'filters']
