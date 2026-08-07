@@ -398,6 +398,22 @@ class _HandlerInitializer(_LogSpec):
             # Add the file handlers to the loggers
             self.logger.addHandler(file_handler)
 
+    def _log_otf_use(self):
+        try:
+            otf_name = self.logger.handlers[-1].filters[0].name
+        except (IndexError, Exception) as e:
+            self._internal_logger.error(f"Error getting filter name: {e}")
+            otf_name = "Unknown"
+        self._internal_logger.info(f'Added filter {otf_name} to StreamHandler()')
+
+    @classmethod
+    def _validate_llts(cls, log_level_to_stream: Union[int, str]):
+        if (log_level_to_stream not in cls.INT_TO_STR_LOGGER_LEVELS
+                and log_level_to_stream not in cls.STR_TO_INT_LOGGER_LEVELS):
+            raise ValueError(f"log_level_to_stream must be one of {list(cls.STR_TO_INT_LOGGER_LEVELS)} or "
+                             f"{list(cls.INT_TO_STR_LOGGER_LEVELS)}, "
+                             f"not {log_level_to_stream}")
+
     def create_stream_handler(self, log_level_to_stream=logging.WARNING, **kwargs):
         """
         Creates and configures a StreamHandler for warning messages to print to the console.
@@ -412,11 +428,7 @@ class _HandlerInitializer(_LogSpec):
         Note: This method assumes that `self.logger` and `self.formatter` are already defined.
         """
 
-        if (log_level_to_stream not in self.__class__.INT_TO_STR_LOGGER_LEVELS
-                and log_level_to_stream not in self.__class__.STR_TO_INT_LOGGER_LEVELS):
-            raise ValueError(f"log_level_to_stream must be one of {list(self.__class__.STR_TO_INT_LOGGER_LEVELS)} or "
-                             f"{list(self.__class__.INT_TO_STR_LOGGER_LEVELS)}, "
-                             f"not {log_level_to_stream}")
+        self._validate_llts(log_level_to_stream)
 
         log_level_name = (logging.getLevelName(log_level_to_stream)
                           if isinstance(log_level_to_stream, int)
@@ -448,12 +460,7 @@ class _HandlerInitializer(_LogSpec):
             f"{log_level_name} messages will be printed to console")
 
         if use_one_time_filter:
-            try:
-                otf_name = self.logger.handlers[-1].filters[0].name
-            except (IndexError, Exception) as e:
-                self._internal_logger.error(f"Error getting filter name: {e}")
-                otf_name = "Unknown"
-            self._internal_logger.info(f'Added filter {otf_name} to StreamHandler()')
+            self._log_otf_use()
 
     def _create_handler_instance(self, handler_to_create, handler_args, **kwargs):
         if handler_args is not None and isinstance(handler_to_create, type):
