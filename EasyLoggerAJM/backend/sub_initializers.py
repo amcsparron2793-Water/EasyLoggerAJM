@@ -418,8 +418,12 @@ class _HandlerInitializer(_LogSpec):
                              f"{list(self.__class__.INT_TO_STR_LOGGER_LEVELS)}, "
                              f"not {log_level_to_stream}")
 
+        log_level_name = (logging.getLevelName(log_level_to_stream)
+                          if isinstance(log_level_to_stream, int)
+                          else log_level_to_stream)
+
         self._internal_logger.info(
-            f"creating StreamHandler() for {logging.getLevelName(log_level_to_stream)} messages to print to console")
+            f"creating StreamHandler() for {log_level_name} messages to print to console")
 
         use_one_time_filter = kwargs.get('use_one_time_filter', True)
         self._internal_logger.info(f"use_one_time_filter set to {use_one_time_filter}")
@@ -440,10 +444,16 @@ class _HandlerInitializer(_LogSpec):
         # Add the stream handler to logger
         self.logger.addHandler(stream_handler)
         self._internal_logger.info(
-            f"StreamHandler() for {logging.getLevelName(log_level_to_stream)} messages added. "
-            f"{logging.getLevelName(log_level_to_stream)}s will be printed to console")
+            f"StreamHandler() for {log_level_name} messages added. "
+            f"{log_level_name} messages will be printed to console")
+
         if use_one_time_filter:
-            self._internal_logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
+            try:
+                otf_name = self.logger.handlers[-1].filters[0].name
+            except (IndexError, Exception) as e:
+                self._internal_logger.error(f"Error getting filter name: {e}")
+                otf_name = "Unknown"
+            self._internal_logger.info(f'Added filter {otf_name} to StreamHandler()')
 
     def _create_handler_instance(self, handler_to_create, handler_args, **kwargs):
         if handler_args is not None and isinstance(handler_to_create, type):
