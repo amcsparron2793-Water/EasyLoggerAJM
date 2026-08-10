@@ -387,21 +387,12 @@ class _EasyFileHandlerInitializer(_LogSpec):
         pass
 
 
-class _HandlerInitializer(_EasyFileHandlerInitializer, _LogSpec):
+class _EasyStreamHandlerInitializer(_LogSpec):
     # noinspection PyTypeChecker
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
         self.stream_formatter: logging.Formatter = None
-
-    @property
-    @abstractmethod
-    def log_location(self) -> Path:
-        ...
-
-    @property
-    @abstractmethod
-    def project_name(self):
-        ...
+        self._internal_logger: logging.Logger = None
+        self.logger: logging.Logger = None
 
     def _add_filter_to_stream_handler(self, handler: logging.StreamHandler):
         """
@@ -489,6 +480,18 @@ class _HandlerInitializer(_EasyFileHandlerInitializer, _LogSpec):
 
         if use_one_time_filter:
             self._log_otf_use()
+
+
+class _HandlerInitializer(_EasyFileHandlerInitializer, _EasyStreamHandlerInitializer):
+    @property
+    @abstractmethod
+    def log_location(self) -> Path:
+        ...
+
+    @property
+    @abstractmethod
+    def project_name(self):
+        ...
 
     def _create_handler_instance(self, handler_to_create, handler_args, **kwargs):
         if handler_args is not None and isinstance(handler_to_create, type):
