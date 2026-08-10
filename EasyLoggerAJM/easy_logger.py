@@ -196,7 +196,7 @@ class SetupLogger:
     :ivar RETURN_INSTANCE_WARNING_TEXT: A warning text to be displayed when a custom logger instance is returned.
     :type RETURN_INSTANCE_WARNING_TEXT: str
     """
-    DEFAULT_CUSTOM_LOGGER = EasyLogger
+    DEFAULT_CUSTOM_LOGGER = None
     RETURN_INSTANCE_WARNING_TEXT = ("Return instance is True. "
                                     "Returning instance of custom logger "
                                     "class which has a 'logger' (type logging.Logger) attribute")
@@ -209,7 +209,10 @@ class SetupLogger:
     def _is_default_logger_instance_callable(cls):
         """this is how to check if a class's INSTANCE is callable
         i.e., does the logger class return a real Logger"""
-        return "__call__" in cls.DEFAULT_CUSTOM_LOGGER.__dict__
+        try:
+            return "__call__" in cls.DEFAULT_CUSTOM_LOGGER.__dict__
+        except AttributeError:
+            return False
 
     # noinspection PyCallingNonCallable
     @classmethod
