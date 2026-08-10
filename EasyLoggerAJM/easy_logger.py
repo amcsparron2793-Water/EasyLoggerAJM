@@ -86,7 +86,7 @@ class EasyLogger(EasyLoggerInitializer):
     def __init__(self, logger=None, **kwargs):
         super().__init__(**kwargs)
 
-        self.logger = self.initialize_logger(logger=logger)
+        self.logger = self.initialize_logger(logger=logger, **kwargs)
 
         self.make_file_handlers()
 
