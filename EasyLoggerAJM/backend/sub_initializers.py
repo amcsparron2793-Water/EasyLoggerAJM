@@ -311,14 +311,13 @@ class _PropertiesInitializer(_LogSpec):
             raise AttributeError("log spec value must be a string or a dict")
 
 
-class _HandlerInitializer(_LogSpec):
+class _EasyFileHandlerInitializer(_LogSpec):
     # noinspection PyTypeChecker
     def __init__(self, **kwargs):
+        self.timestamp: str = None
         self._internal_logger: logging.Logger = None
         self.logger: logging.Logger = None
         self.formatter: logging.Formatter = None
-        self.stream_formatter: logging.Formatter = None
-        self.timestamp: str = None
 
     @property
     @abstractmethod
@@ -334,35 +333,6 @@ class _HandlerInitializer(_LogSpec):
     @abstractmethod
     def project_name(self):
         ...
-
-    def _add_filter_to_file_handler(self, handler: logging.FileHandler):
-        """
-        this is meant to be overwritten in a subclass to allow for filters
-        to be added to file handlers without rewriting the entire method.
-
-        Ex: new_filter = MyFilter()
-        handler.addFilter(new_filter)
-        :param handler:
-        :type handler:
-        :return:
-        :rtype:
-        """
-        pass
-
-    def _add_filter_to_stream_handler(self, handler: logging.StreamHandler):
-        """
-        this is meant to be overwritten in a subclass to allow for filters
-        to be added to stream handlers without rewriting the entire method.
-
-        Ex: new_filter = MyFilter()
-        handler.addFilter(new_filter)
-
-        :param handler:
-        :type handler:
-        :return:
-        :rtype:
-        """
-        pass
 
     def _make_file_handler_for_level(self, lvl: Union[int, str], file_handler_class: Type[logging.FileHandler], **kwargs):
         self.logger.setLevel(lvl)
@@ -401,6 +371,52 @@ class _HandlerInitializer(_LogSpec):
         for lvl in self.file_logger_levels:
             file_handler_class = kwargs.pop('file_handler_class', logging.FileHandler)
             self._make_file_handler_for_level(lvl, file_handler_class, **kwargs)
+
+    def _add_filter_to_file_handler(self, handler: logging.FileHandler):
+        """
+        this is meant to be overwritten in a subclass to allow for filters
+        to be added to file handlers without rewriting the entire method.
+
+        Ex: new_filter = MyFilter()
+        handler.addFilter(new_filter)
+        :param handler:
+        :type handler:
+        :return:
+        :rtype:
+        """
+        pass
+
+
+class _HandlerInitializer(_EasyFileHandlerInitializer, _LogSpec):
+    # noinspection PyTypeChecker
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.stream_formatter: logging.Formatter = None
+
+    @property
+    @abstractmethod
+    def log_location(self) -> Path:
+        ...
+
+    @property
+    @abstractmethod
+    def project_name(self):
+        ...
+
+    def _add_filter_to_stream_handler(self, handler: logging.StreamHandler):
+        """
+        this is meant to be overwritten in a subclass to allow for filters
+        to be added to stream handlers without rewriting the entire method.
+
+        Ex: new_filter = MyFilter()
+        handler.addFilter(new_filter)
+
+        :param handler:
+        :type handler:
+        :return:
+        :rtype:
+        """
+        pass
 
     def _log_otf_use(self):
         try:
