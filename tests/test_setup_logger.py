@@ -29,6 +29,8 @@ def test_setup_logger_return_wrapper_instance(tmp_path):
     project_name = "TestProjectWrapper"
     root_log_location = str(tmp_path / "logs_wrapper")
 
+    SetupLogger.DEFAULT_CUSTOM_LOGGER = EasyLogger
+
     el_instance = SetupLogger.setup_logger(
         project_name=project_name,
         root_log_location=root_log_location,
