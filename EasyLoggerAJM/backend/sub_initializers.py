@@ -2,7 +2,7 @@ import logging
 from abc import abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Union, Optional, Callable, Tuple
+from typing import Union, Optional, Callable, Tuple, Type
 
 from EasyLoggerAJM.logger_parts import ConsoleOneTimeFilter, ColorizedFormatter
 
@@ -364,6 +364,24 @@ class _HandlerInitializer(_LogSpec):
         """
         pass
 
+    def _make_file_handler_for_level(self, lvl: Union[int, str], file_handler_class: Type[logging.FileHandler], **kwargs):
+        self.logger.setLevel(lvl)
+        level_string = self.__class__.INT_TO_STR_LOGGER_LEVELS[self.logger.level]
+
+        log_path = Path(self.log_location, '{}-{}-{}.log'.format(level_string,
+                                                                 self.project_name, self.timestamp))
+
+        # Create a file handler for the logger, and specify the log file location
+        file_handler = file_handler_class(log_path)
+        # Set the logging format for the file handler
+        file_handler.setFormatter(self.formatter)
+        file_handler.setLevel(self.logger.level)
+        # doesn't do anything unless subclassed
+        self._add_filter_to_file_handler(file_handler)
+
+        # Add the file handlers to the loggers
+        self.logger.addHandler(file_handler)
+
     def make_file_handlers(self, **kwargs):
         """
         This method is used to create file handlers for the logger.
@@ -381,22 +399,8 @@ class _HandlerInitializer(_LogSpec):
         """
         self._internal_logger.info("creating file handlers for each logger level and log file location")
         for lvl in self.file_logger_levels:
-            self.logger.setLevel(lvl)
-            level_string = self.__class__.INT_TO_STR_LOGGER_LEVELS[self.logger.level]
-
-            log_path = Path(self.log_location, '{}-{}-{}.log'.format(level_string,
-                                                                     self.project_name, self.timestamp))
-
-            # Create a file handler for the logger, and specify the log file location
-            file_handler = kwargs.get('file_handler_class', logging.FileHandler)(log_path)
-            # Set the logging format for the file handler
-            file_handler.setFormatter(self.formatter)
-            file_handler.setLevel(self.logger.level)
-            # doesn't do anything unless subclassed
-            self._add_filter_to_file_handler(file_handler)
-
-            # Add the file handlers to the loggers
-            self.logger.addHandler(file_handler)
+            file_handler_class = kwargs.pop('file_handler_class', logging.FileHandler)
+            self._make_file_handler_for_level(lvl, file_handler_class, **kwargs)
 
     def _log_otf_use(self):
         try:
@@ -480,7 +484,7 @@ class _HandlerInitializer(_LogSpec):
             self._internal_logger.info(f"instance of {handler_to_create.__class__.__name__} handler detected, moving to set up")
         return instance
 
-    def create_other_handlers(self, handler_to_create: type(logging.Handler) = None,
+    def create_other_handlers(self, handler_to_create: Optional[logging.Handler] = None,
                               handler_args: Optional[dict] = None, **kwargs):
         if handler_to_create and (callable(handler_to_create) or isinstance(handler_to_create, logging.Handler)):
             self._internal_logger.info(f"creating {handler_to_create.__class__.__name__} handler")
