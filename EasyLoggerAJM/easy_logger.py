@@ -154,11 +154,12 @@ class EasyLogger(EasyLoggerInitializer):
         self.logger.propagate = False
         return self.logger
         """
-        if not logger:
+        if logger is None:
             self.logger = self._set_logger_class(**kwargs)
         else:
             self._internal_logger.info(f'passed in logger ({logger}) detected')
-            self.logger: logging.getLogger = logger
+            self.logger = logger
+
         self.logger.propagate = kwargs.get('propagate', True)
         self._internal_logger.info('logger initialized')
         self._internal_logger.info(f'propagate set to {self.logger.propagate}')
@@ -289,6 +290,7 @@ class SetupLogger:
 
 
 if __name__ == '__main__':
+    SetupLogger.DEFAULT_CUSTOM_LOGGER = EasyLogger
     el = SetupLogger.setup_logger(internal_verbose=True,
                                   return_wrapper_instance=False,
                                   show_warning_logs_in_console=True)  #, log_level_to_stream=logging.INFO)
