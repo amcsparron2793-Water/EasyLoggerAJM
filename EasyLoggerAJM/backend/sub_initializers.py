@@ -414,7 +414,21 @@ class _HandlerInitializer(_LogSpec):
                              f"{list(cls.INT_TO_STR_LOGGER_LEVELS)}, "
                              f"not {log_level_to_stream}")
 
-    def create_stream_handler(self, log_level_to_stream=logging.WARNING, **kwargs):
+    def _setup_stream_handler(self, log_level_to_stream: Union[int, str], use_one_time_filter: bool, **kwargs):
+        # Create a stream handler for the logger
+        stream_handler = kwargs.get('stream_handler_instance', logging.StreamHandler())
+        # Set the logging format for the stream handler
+        stream_handler.setFormatter(self.stream_formatter)
+        stream_handler.setLevel(log_level_to_stream)
+        if use_one_time_filter:
+            # set the one time filter, so that log_level_to_stream messages will only be printed to the console once.
+            one_time_filter = ConsoleOneTimeFilter()
+            stream_handler.addFilter(one_time_filter)
+            self._internal_logger.info(f"Added filter {one_time_filter.name} to StreamHandler()")
+
+        return stream_handler
+
+    def create_stream_handler(self, log_level_to_stream: Union[int, str] = logging.WARNING, **kwargs) -> None:
         """
         Creates and configures a StreamHandler for warning messages to print to the console.
 
@@ -437,18 +451,12 @@ class _HandlerInitializer(_LogSpec):
         self._internal_logger.info(
             f"creating StreamHandler() for {log_level_name} messages to print to console")
 
-        use_one_time_filter = kwargs.get('use_one_time_filter', True)
+        use_one_time_filter = kwargs.pop('use_one_time_filter', True)
         self._internal_logger.info(f"use_one_time_filter set to {use_one_time_filter}")
 
-        # Create a stream handler for the logger
-        stream_handler = kwargs.get('stream_handler_instance', logging.StreamHandler())
-        # Set the logging format for the stream handler
-        stream_handler.setFormatter(self.stream_formatter)
-        stream_handler.setLevel(log_level_to_stream)
-        if use_one_time_filter:
-            # set the one time filter, so that log_level_to_stream messages will only be printed to the console once.
-            one_time_filter = ConsoleOneTimeFilter()
-            stream_handler.addFilter(one_time_filter)
+        stream_handler = self._setup_stream_handler(log_level_to_stream,
+                                                    use_one_time_filter,
+                                                    **kwargs)
 
         # doesn't do anything unless subclassed
         self._add_filter_to_stream_handler(stream_handler)
