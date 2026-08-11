@@ -2,7 +2,7 @@ import logging
 from abc import abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Union, Optional, Callable, Tuple
+from typing import Union, Optional, Callable, Tuple, Type
 
 from EasyLoggerAJM.logger_parts import ConsoleOneTimeFilter, ColorizedFormatter
 
@@ -311,14 +311,13 @@ class _PropertiesInitializer(_LogSpec):
             raise AttributeError("log spec value must be a string or a dict")
 
 
-class _HandlerInitializer(_LogSpec):
+class _EasyFileHandlerInitializer(_LogSpec):
     # noinspection PyTypeChecker
     def __init__(self, **kwargs):
+        self.timestamp: str = None
         self._internal_logger: logging.Logger = None
         self.logger: logging.Logger = None
         self.formatter: logging.Formatter = None
-        self.stream_formatter: logging.Formatter = None
-        self.timestamp: str = None
 
     @property
     @abstractmethod
@@ -335,34 +334,23 @@ class _HandlerInitializer(_LogSpec):
     def project_name(self):
         ...
 
-    def _add_filter_to_file_handler(self, handler: logging.FileHandler):
-        """
-        this is meant to be overwritten in a subclass to allow for filters
-        to be added to file handlers without rewriting the entire method.
+    def _make_file_handler_for_level(self, lvl: Union[int, str], file_handler_class: Type[logging.FileHandler], **kwargs):
+        self.logger.setLevel(lvl)
+        level_string = self.__class__.INT_TO_STR_LOGGER_LEVELS[self.logger.level]
 
-        Ex: new_filter = MyFilter()
-        handler.addFilter(new_filter)
-        :param handler:
-        :type handler:
-        :return:
-        :rtype:
-        """
-        pass
+        log_path = Path(self.log_location, '{}-{}-{}.log'.format(level_string,
+                                                                 self.project_name, self.timestamp))
 
-    def _add_filter_to_stream_handler(self, handler: logging.StreamHandler):
-        """
-        this is meant to be overwritten in a subclass to allow for filters
-        to be added to stream handlers without rewriting the entire method.
+        # Create a file handler for the logger, and specify the log file location
+        file_handler = file_handler_class(log_path)
+        # Set the logging format for the file handler
+        file_handler.setFormatter(self.formatter)
+        file_handler.setLevel(self.logger.level)
+        # doesn't do anything unless subclassed
+        self._add_filter_to_file_handler(file_handler)
 
-        Ex: new_filter = MyFilter()
-        handler.addFilter(new_filter)
-
-        :param handler:
-        :type handler:
-        :return:
-        :rtype:
-        """
-        pass
+        # Add the file handlers to the loggers
+        self.logger.addHandler(file_handler)
 
     def make_file_handlers(self, **kwargs):
         """
@@ -381,24 +369,77 @@ class _HandlerInitializer(_LogSpec):
         """
         self._internal_logger.info("creating file handlers for each logger level and log file location")
         for lvl in self.file_logger_levels:
-            self.logger.setLevel(lvl)
-            level_string = self.__class__.INT_TO_STR_LOGGER_LEVELS[self.logger.level]
+            file_handler_class = kwargs.pop('file_handler_class', logging.FileHandler)
+            self._make_file_handler_for_level(lvl, file_handler_class, **kwargs)
 
-            log_path = Path(self.log_location, '{}-{}-{}.log'.format(level_string,
-                                                                     self.project_name, self.timestamp))
+    def _add_filter_to_file_handler(self, handler: logging.FileHandler):
+        """
+        this is meant to be overwritten in a subclass to allow for filters
+        to be added to file handlers without rewriting the entire method.
 
-            # Create a file handler for the logger, and specify the log file location
-            file_handler = kwargs.get('file_handler_class', logging.FileHandler)(log_path)
-            # Set the logging format for the file handler
-            file_handler.setFormatter(self.formatter)
-            file_handler.setLevel(self.logger.level)
-            # doesn't do anything unless subclassed
-            self._add_filter_to_file_handler(file_handler)
+        Ex: new_filter = MyFilter()
+        handler.addFilter(new_filter)
+        :param handler:
+        :type handler:
+        :return:
+        :rtype:
+        """
+        pass
 
-            # Add the file handlers to the loggers
-            self.logger.addHandler(file_handler)
 
-    def create_stream_handler(self, log_level_to_stream=logging.WARNING, **kwargs):
+class _EasyStreamHandlerInitializer(_LogSpec):
+    # noinspection PyTypeChecker
+    def __init__(self):
+        self.stream_formatter: logging.Formatter = None
+        self._internal_logger: logging.Logger = None
+        self.logger: logging.Logger = None
+
+    def _add_filter_to_stream_handler(self, handler: logging.StreamHandler):
+        """
+        this is meant to be overwritten in a subclass to allow for filters
+        to be added to stream handlers without rewriting the entire method.
+
+        Ex: new_filter = MyFilter()
+        handler.addFilter(new_filter)
+
+        :param handler:
+        :type handler:
+        :return:
+        :rtype:
+        """
+        pass
+
+    def _log_otf_use(self):
+        try:
+            otf_name = self.logger.handlers[-1].filters[0].name
+        except (IndexError, Exception) as e:
+            self._internal_logger.error(f"Error getting filter name: {e}")
+            otf_name = "Unknown"
+        self._internal_logger.info(f'Added filter {otf_name} to StreamHandler()')
+
+    @classmethod
+    def _validate_llts(cls, log_level_to_stream: Union[int, str]):
+        if (log_level_to_stream not in cls.INT_TO_STR_LOGGER_LEVELS
+                and log_level_to_stream not in cls.STR_TO_INT_LOGGER_LEVELS):
+            raise ValueError(f"log_level_to_stream must be one of {list(cls.STR_TO_INT_LOGGER_LEVELS)} or "
+                             f"{list(cls.INT_TO_STR_LOGGER_LEVELS)}, "
+                             f"not {log_level_to_stream}")
+
+    def _setup_stream_handler(self, log_level_to_stream: Union[int, str], use_one_time_filter: bool, **kwargs):
+        # Create a stream handler for the logger
+        stream_handler = kwargs.get('stream_handler_instance', logging.StreamHandler())
+        # Set the logging format for the stream handler
+        stream_handler.setFormatter(self.stream_formatter)
+        stream_handler.setLevel(log_level_to_stream)
+        if use_one_time_filter:
+            # set the one time filter, so that log_level_to_stream messages will only be printed to the console once.
+            one_time_filter = ConsoleOneTimeFilter()
+            stream_handler.addFilter(one_time_filter)
+            self._internal_logger.info(f"Added filter {one_time_filter.name} to StreamHandler()")
+
+        return stream_handler
+
+    def create_stream_handler(self, log_level_to_stream: Union[int, str] = logging.WARNING, **kwargs) -> None:
         """
         Creates and configures a StreamHandler for warning messages to print to the console.
 
@@ -412,27 +453,21 @@ class _HandlerInitializer(_LogSpec):
         Note: This method assumes that `self.logger` and `self.formatter` are already defined.
         """
 
-        if (log_level_to_stream not in self.__class__.INT_TO_STR_LOGGER_LEVELS
-                and log_level_to_stream not in self.__class__.STR_TO_INT_LOGGER_LEVELS):
-            raise ValueError(f"log_level_to_stream must be one of {list(self.__class__.STR_TO_INT_LOGGER_LEVELS)} or "
-                             f"{list(self.__class__.INT_TO_STR_LOGGER_LEVELS)}, "
-                             f"not {log_level_to_stream}")
+        self._validate_llts(log_level_to_stream)
+
+        log_level_name = (logging.getLevelName(log_level_to_stream)
+                          if isinstance(log_level_to_stream, int)
+                          else log_level_to_stream)
 
         self._internal_logger.info(
-            f"creating StreamHandler() for {logging.getLevelName(log_level_to_stream)} messages to print to console")
+            f"creating StreamHandler() for {log_level_name} messages to print to console")
 
-        use_one_time_filter = kwargs.get('use_one_time_filter', True)
+        use_one_time_filter = kwargs.pop('use_one_time_filter', True)
         self._internal_logger.info(f"use_one_time_filter set to {use_one_time_filter}")
 
-        # Create a stream handler for the logger
-        stream_handler = kwargs.get('stream_handler_instance', logging.StreamHandler())
-        # Set the logging format for the stream handler
-        stream_handler.setFormatter(self.stream_formatter)
-        stream_handler.setLevel(log_level_to_stream)
-        if use_one_time_filter:
-            # set the one time filter, so that log_level_to_stream messages will only be printed to the console once.
-            one_time_filter = ConsoleOneTimeFilter()
-            stream_handler.addFilter(one_time_filter)
+        stream_handler = self._setup_stream_handler(log_level_to_stream,
+                                                    use_one_time_filter,
+                                                    **kwargs)
 
         # doesn't do anything unless subclassed
         self._add_filter_to_stream_handler(stream_handler)
@@ -440,10 +475,23 @@ class _HandlerInitializer(_LogSpec):
         # Add the stream handler to logger
         self.logger.addHandler(stream_handler)
         self._internal_logger.info(
-            f"StreamHandler() for {logging.getLevelName(log_level_to_stream)} messages added. "
-            f"{logging.getLevelName(log_level_to_stream)}s will be printed to console")
+            f"StreamHandler() for {log_level_name} messages added. "
+            f"{log_level_name} messages will be printed to console")
+
         if use_one_time_filter:
-            self._internal_logger.info(f'Added filter {self.logger.handlers[-1].filters[0].name} to StreamHandler()')
+            self._log_otf_use()
+
+
+class _HandlerInitializer(_EasyFileHandlerInitializer, _EasyStreamHandlerInitializer):
+    @property
+    @abstractmethod
+    def log_location(self) -> Path:
+        ...
+
+    @property
+    @abstractmethod
+    def project_name(self):
+        ...
 
     def _create_handler_instance(self, handler_to_create, handler_args, **kwargs):
         if handler_args is not None and isinstance(handler_to_create, type):
@@ -455,7 +503,7 @@ class _HandlerInitializer(_LogSpec):
             self._internal_logger.info(f"instance of {handler_to_create.__class__.__name__} handler detected, moving to set up")
         return instance
 
-    def create_other_handlers(self, handler_to_create: type(logging.Handler) = None,
+    def create_other_handlers(self, handler_to_create: Optional[logging.Handler] = None,
                               handler_args: Optional[dict] = None, **kwargs):
         if handler_to_create and (callable(handler_to_create) or isinstance(handler_to_create, logging.Handler)):
             self._internal_logger.info(f"creating {handler_to_create.__class__.__name__} handler")

@@ -59,6 +59,7 @@ class _BaseCustomEmailHandler(Handler):
                 self._email_msg = value()
             else:
                 self._email_msg = value
+        # FIXME: makes test_outlook_handler_email_msg_validation fail
         if (self.__class__.VALID_EMAIL_MSG_TYPES
                 and len(self.__class__.VALID_EMAIL_MSG_TYPES) <= 0):
             raise InvalidEmailMsgType(
