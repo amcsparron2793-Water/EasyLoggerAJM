@@ -280,7 +280,7 @@ class SetupLogger:
         if not isinstance(logger, logging.Logger):
             raise TypeError(f"logger must be an instance of {logging.Logger}, not {type(logger)}")
 
-        if logger.name == default_logger_name or not logger.hasHandlers():
+        if not logger.hasHandlers():
             logging.basicConfig(level=basic_config_level)
             logger.info(f'using basic config with level: {basic_config_level}')
         else:
