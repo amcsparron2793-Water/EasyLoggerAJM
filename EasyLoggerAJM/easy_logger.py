@@ -217,7 +217,8 @@ class SetupLogger:
 
     # noinspection PyCallingNonCallable
     @classmethod
-    def _setup_default_custom_logger(cls, return_wrapper_instance=False, **kwargs) -> Tuple[Union[logging.Logger, Any], bool]:
+    def _setup_default_custom_logger(cls, return_wrapper_instance=False, **kwargs) -> Tuple[
+        Union[logging.Logger, Any], bool]:
         instance_not_callable = False
         logger = None
         if return_wrapper_instance:
@@ -268,11 +269,27 @@ class SetupLogger:
             cls._raise_and_log_not_callable(logger)
         return logger
 
+    @staticmethod
+    def _clean_handlers_for_force_basic_config(logger: logging.Logger, basic_config_level: str):
+        logger.info(f"force_basic_config is True, using basicConfig with level: {basic_config_level}")
+        logger.info(f"removing all handlers from logger: {logger.name} in preparation for basicConfig")
+        for handler in logger.handlers:
+            logger.removeHandler(handler)
+            handler.close()
+        return logger
+
     @classmethod
     def _check_fallback_logger_config(cls, default_logger_name: Optional[str] = None, **kwargs) -> logging.Logger:
         default_logger_name = default_logger_name or cls.__name__
         logger = kwargs.get('logger', None)
+
+        force_basic_config = kwargs.pop('force_basic_config', False)
+        force_skip_basic_config = kwargs.pop('force_skip_basic_config', False)
+
         basic_config_level = kwargs.pop('basic_config_level', 'DEBUG')
+
+        if force_basic_config and force_skip_basic_config:
+            raise ValueError("force_basic_config and force_skip_basic_config cannot both be True")
 
         if not logger:
             logger = logging.getLogger(default_logger_name)
@@ -280,11 +297,18 @@ class SetupLogger:
         if not isinstance(logger, logging.Logger):
             raise TypeError(f"logger must be an instance of {logging.Logger}, not {type(logger)}")
 
-        if logger.name == default_logger_name or not logger.hasHandlers():
-            logging.basicConfig(level=basic_config_level)
-            logger.info(f'using basic config with level: {basic_config_level}')
+        if not force_skip_basic_config:
+            if not logger.hasHandlers() or force_basic_config:
+                if force_basic_config:
+                    logger = cls._clean_handlers_for_force_basic_config(logger=logger,
+                                                                        basic_config_level=basic_config_level)
+
+                logging.basicConfig(level=basic_config_level)
+                logger.info(f'using basic config with level: {basic_config_level}')
+            else:
+                logger.info(f"logger: {logger.name} already has handlers, not using basicConfig")
         else:
-            logger.info(f"logger: {logger.name} already has handlers, not using basicConfig")
+            logger.info(f"force_skip_basic_config is True, not using basicConfig")
         logger.info(f"Using logger: {logger.name}")
         return logger
 
