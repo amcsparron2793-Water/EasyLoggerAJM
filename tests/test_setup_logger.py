@@ -133,17 +133,22 @@ def test_check_fallback_logger_config_with_handlers(monkeypatch):
 
 def test_check_fallback_logger_config_without_handlers(monkeypatch):
     # If logger has no handlers, basicConfig SHOULD be used
-    # BUT wait, the code checks:
-    # if logger.name == default_logger_name or not logger.hasHandlers():
+    # The code checks: if not logger.hasHandlers():
 
-    # default_logger_name is default_logger_name or cls.__name__ ("SetupLogger")
-
-    logger = logging.getLogger("SetupLogger")  # This matches default_logger_name
-    logger.handlers = []
+    logger = logging.getLogger("TestLoggerNoHandlers")
+    # Ensure no handlers
+    for h in logger.handlers[:]:
+        logger.removeHandler(h)
+    
+    # We must also ensure it doesn't have handlers via its parents if propagate is True
+    # but hasHandlers() checks exactly that.
+    # To be sure, we can set propagate to False or ensure parents don't have handlers.
+    logger.propagate = False
 
     called = []
     monkeypatch.setattr(logging, "basicConfig", lambda **kwargs: called.append(kwargs))
 
+    # Pass logger in kwargs as expected by _check_fallback_logger_config
     SetupLogger._check_fallback_logger_config(logger=logger)
     assert len(called) == 1
     assert called[0]['level'] == 'DEBUG'
