@@ -14,6 +14,8 @@ class EasyLoggerInitializer(_PropertiesInitializer,
     and internal logger initialization.
     """
 
+    DEFAULT_LOGGER_NAME = 'logger'
+
     # noinspection PyMissingConstructor
     def __init__(self, project_name=None, **kwargs):
         """Initialize common logging properties, timestamp, and formatters.

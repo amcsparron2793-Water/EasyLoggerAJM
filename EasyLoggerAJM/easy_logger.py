@@ -135,8 +135,10 @@ class EasyLogger(EasyLoggerInitializer):
         self._internal_logger.info('no passed in logger detected')
         logging.setLoggerClass(logger_class)
         self._internal_logger.info(f'logger class set to \'{logger_class.__name__}\'')
+
+        logger_name = kwargs.get('logger_name', self.__class__.DEFAULT_LOGGER_NAME)
         # Create a logger with a specified name
-        self.logger = logging.getLogger(kwargs.get('logger_name', 'logger'))
+        self.logger = logging.getLogger(logger_name)
         self._internal_logger.info(f'logger created with name set to \'{self.logger.name}\'')
         return self.logger
 
@@ -194,13 +196,13 @@ class SetupLogger:
     :ivar DEFAULT_CUSTOM_LOGGER: A customizable logger class or callable. If set, the
         setup methods will utilize it for logger configuration.
     :type DEFAULT_CUSTOM_LOGGER: Optional[Callable or Any]
-    :ivar RETURN_INSTANCE_WARNING_TEXT: A warning text to be displayed when a custom logger instance is returned.
-    :type RETURN_INSTANCE_WARNING_TEXT: str
+    :ivar RETURN_WRAPPER_INSTANCE_WARNING_TEXT: A warning text to be displayed when a custom logger instance is returned.
+    :type RETURN_WRAPPER_INSTANCE_WARNING_TEXT: str
     """
     DEFAULT_CUSTOM_LOGGER = None
-    RETURN_INSTANCE_WARNING_TEXT = ("Return instance is True. "
-                                    "Returning instance of custom logger "
-                                    "class which has a 'logger' (type logging.Logger) attribute")
+    RETURN_WRAPPER_INSTANCE_WARNING_TEXT = ("return_wrapper_instance is True. "
+                                            "Returning instance of custom logger "
+                                            "class which has a 'logger' (type logging.Logger) attribute")
 
     def __new__(cls, *args, **kwargs):
         raise TypeError("SetupLogger cannot be instantiated. "
@@ -217,13 +219,14 @@ class SetupLogger:
 
     # noinspection PyCallingNonCallable
     @classmethod
-    def _setup_default_custom_logger(cls, return_wrapper_instance=False, **kwargs) -> Tuple[Union[logging.Logger, Any], bool]:
+    def _setup_default_custom_logger(cls, return_wrapper_instance=False,
+                                     **kwargs) -> Tuple[Union[logging.Logger, Any], bool]:
         instance_not_callable = False
         logger = None
         if return_wrapper_instance:
             logger = cls.DEFAULT_CUSTOM_LOGGER(**kwargs)
             if hasattr(logger, 'logger'):
-                getattr(logger, 'logger').warning(cls.RETURN_INSTANCE_WARNING_TEXT)
+                getattr(logger, 'logger').warning(cls.RETURN_WRAPPER_INSTANCE_WARNING_TEXT)
             return logger, instance_not_callable
         elif cls._is_default_logger_instance_callable():
             logger = cls.DEFAULT_CUSTOM_LOGGER(**kwargs)()
@@ -238,7 +241,7 @@ class SetupLogger:
             return logger
         elif return_wrapper_instance and not isinstance(logger, cls.DEFAULT_CUSTOM_LOGGER):
             raise TypeError(f"logger must be an instance of "
-                            f"{cls.DEFAULT_CUSTOM_LOGGER}, if return_instance is True")
+                            f"{cls.DEFAULT_CUSTOM_LOGGER}, if return_wrapper_instance is True")
         return None
 
     @staticmethod
@@ -270,7 +273,9 @@ class SetupLogger:
 
     @classmethod
     def _check_fallback_logger_config(cls, default_logger_name: Optional[str] = None, **kwargs) -> logging.Logger:
-        default_logger_name = default_logger_name or cls.__name__
+        default_logger_name = default_logger_name or getattr(cls.DEFAULT_CUSTOM_LOGGER,
+                                                             'DEFAULT_LOGGER_NAME',
+                                                             cls.__name__)
         logger = kwargs.get('logger', None)
         basic_config_level = kwargs.pop('basic_config_level', 'DEBUG')
 
@@ -280,7 +285,7 @@ class SetupLogger:
         if not isinstance(logger, logging.Logger):
             raise TypeError(f"logger must be an instance of {logging.Logger}, not {type(logger)}")
 
-        if not logger.hasHandlers():
+        if not logger.handlers:
             logging.basicConfig(level=basic_config_level)
             logger.info(f'using basic config with level: {basic_config_level}')
         else:
@@ -290,8 +295,13 @@ class SetupLogger:
 
 
 if __name__ == '__main__':
-    SetupLogger.DEFAULT_CUSTOM_LOGGER = EasyLogger
-    el = SetupLogger.setup_logger(internal_verbose=True,
+    class _TestLogger(EasyLogger):
+        def __call__(self, *args, **kwargs):
+            return self.logger
+
+
+    SetupLogger.DEFAULT_CUSTOM_LOGGER = _TestLogger
+    el = SetupLogger.setup_logger(internal_verbose=False,
                                   return_wrapper_instance=False,
                                   show_warning_logs_in_console=True)  #, log_level_to_stream=logging.INFO)
     print(type(el))
