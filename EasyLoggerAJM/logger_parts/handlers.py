@@ -96,15 +96,18 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
     def __init_subclass__(cls, **kwargs):
         if not cls.VALID_EMAIL_MSG_TYPES:
             raise ValueError("VALID_EMAIL_MSG_TYPES not defined.")
-
+    
+    def _use_error_template(self, err, **kwargs):
+        stderr.write(
+            self.__class__.ERROR_TEMPLATE.format(error_msg=err))
+    
     def _prepare_email(self, record):
         try:
             self.email_msg.To = self.recipient  # Replace with your recipient
             self.email_msg.Subject = f"{record.levelname} in {self.project_name}"
             self.email_msg.HTMLBody = self.format(record)
         except Exception as e:
-            stderr.write(
-                self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+            self._use_error_template(e)
 
     def _prep_and_attach_logfile(self):
         zip_to_attach, copy_dir_path = self._prep_logfile_attachment()
@@ -116,28 +119,24 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
         try:
             self._cleanup_logfile_zip(cdp, zta)
         except UnboundLocalError as e:
-            stderr.write(
-                self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+            self._use_error_template(e)
         finally:
             try:
                 self.email_msg.Attachments.Clear()
             except Exception as e:
-                stderr.write(
-                    self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+                self._use_error_template(e)
             finally:
                 try:
                     self.email_msg.Send()
                 except Exception as e:
-                    stderr.write(
-                        self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+                    self._use_error_template(e)
 
     def _send_and_cleanup_attachments(self, copy_dir_path, zip_to_attach, **kwargs):
         try:
             self.email_msg.Send()
             self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
         except Exception as e:
-            stderr.write(
-                self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+            self._use_error_template(e, **kwargs)
         finally:
             self._send_and_cleanup_try_finally_block(copy_dir_path, zip_to_attach)
 
@@ -164,13 +163,13 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
             try:
                 raise LogFilePrepError(e) from None
             except LogFilePrepError as le:
-                stderr.write(self.__class__.ERROR_TEMPLATE.format(error_msg=le))
+                self._use_error_template(le)
 
         # Send the email once
         try:
             self.email_msg.Send()
         except Exception as e:
-            stderr.write(self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+            self._use_error_template(e)
         finally:
             # Cleanup: clear attachments and remove temp files if they were created
             try:
@@ -178,14 +177,14 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
                 self.email_msg.Attachments.Clear()
                 self.email_msg.Send()
             except Exception as e:
-                stderr.write(self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+                self._use_error_template(e)
 
             # Remove temp-copied directory and zip if they exist
             try:
                 if copy_dir_path and zip_to_attach:
                     self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
             except Exception as e:
-                stderr.write(self.__class__.ERROR_TEMPLATE.format(error_msg=e))
+                self._use_error_template(e)
 
 
 class StreamHandlerIgnoreExecInfo(StreamHandler):
