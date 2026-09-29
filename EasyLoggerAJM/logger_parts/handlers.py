@@ -112,6 +112,7 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
     
     def _prepare_email(self, record):
         try:
+            setattr(self, 'send_success', False)
             self.email_msg.To = self.recipient  # Replace with your recipient
             self.email_msg.Subject = f"{record.levelname} in {self.project_name}"
             self.email_msg.HTMLBody = self.format(record)
@@ -130,7 +131,7 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
         except UnboundLocalError as e:
             self._use_error_template(e)
         finally:
-            if not getattr(self.email_msg, 'send_success', False):
+            if not getattr(self, 'send_success', False):
                 try:
                     self.email_msg.Attachments.Clear()
                 except Exception as e:
@@ -144,7 +145,7 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
     def _send_and_cleanup_attachments(self, copy_dir_path, zip_to_attach, **kwargs):
         try:
             self.email_msg.Send()
-            setattr(self.email_msg, 'send_success', True)
+            setattr(self, 'send_success', True)
             self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
         except Exception as e:
             self._use_error_template(e, **kwargs)
