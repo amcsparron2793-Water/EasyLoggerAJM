@@ -76,6 +76,7 @@ class _BaseCustomEmailHandler(Handler):
     def _prep_logfile_attachment(self, dir_path: Optional[Path] = None):
         if not dir_path:
             dir_path = Path(self.logger_dir_path.as_posix())
+
         if dir_path.is_dir():
             copy_dest = dir_path / 'copy_of_logfile'
             copytree(dir_path, copy_dest, dirs_exist_ok=True)
@@ -140,6 +141,20 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
         finally:
             self._send_and_cleanup_try_finally_block(copy_dir_path, zip_to_attach)
 
+    def _attempt_logfile_attach(self) -> tuple[Optional[Path], Optional[Path]]:
+        zip_to_attach = None
+        copy_dir_path = None
+        # Try to prepare and attach the logfile zip; on failure, continue without attachment
+        try:
+            zip_to_attach, copy_dir_path = self._prep_and_attach_logfile()
+        except Exception as e:
+            # Surface a specific error type for caller visibility, but do not block the email send
+            try:
+                raise LogFilePrepError(e) from None
+            except LogFilePrepError as le:
+                self._use_error_template(le)
+        return zip_to_attach, copy_dir_path
+
     def emit(self, record):
         """
         Emit a log record by sending an Outlook email, optionally with zipped log attachments.
@@ -152,39 +167,9 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
         """
         self._prepare_email(record)
 
-        zip_to_attach = None
-        copy_dir_path = None
+        zip_to_attach, copy_dir_path = self._attempt_logfile_attach()
 
-        # Try to prepare and attach the logfile zip; on failure, continue without attachment
-        try:
-            zip_to_attach, copy_dir_path = self._prep_and_attach_logfile()
-        except Exception as e:
-            # Surface a specific error type for caller visibility, but do not block the email send
-            try:
-                raise LogFilePrepError(e) from None
-            except LogFilePrepError as le:
-                self._use_error_template(le)
-
-        # Send the email once
-        try:
-            self.email_msg.Send()
-        except Exception as e:
-            self._use_error_template(e)
-        finally:
-            # Cleanup: clear attachments and remove temp files if they were created
-            try:
-                # Clear attachments on the email object (best effort)
-                self.email_msg.Attachments.Clear()
-                self.email_msg.Send()
-            except Exception as e:
-                self._use_error_template(e)
-
-            # Remove temp-copied directory and zip if they exist
-            try:
-                if copy_dir_path and zip_to_attach:
-                    self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
-            except Exception as e:
-                self._use_error_template(e)
+        self._send_and_cleanup_attachments(zip_to_attach, copy_dir_path)
 
 
 class StreamHandlerIgnoreExecInfo(StreamHandler):
