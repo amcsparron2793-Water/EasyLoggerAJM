@@ -68,6 +68,8 @@ class _BaseCustomEmailHandler(Handler):
 
     @staticmethod
     def _write_zip(zip_path: Union[Path, str] = None, copy_dest: Path = None):
+        if not zip_path or not copy_dest:
+            return
         with ZipFile(zip_path, 'w') as zipf:
             for f in copy_dest.iterdir():
                 if f.suffix == '.log':
@@ -75,7 +77,7 @@ class _BaseCustomEmailHandler(Handler):
 
     def _prep_logfile_attachment(self, dir_path: Optional[Path] = None):
         if not dir_path:
-            dir_path = Path(self.logger_dir_path.as_posix())
+            dir_path: Path = Path(self.logger_dir_path.as_posix())
 
         if dir_path.is_dir():
             copy_dest = dir_path / 'copy_of_logfile'
@@ -84,11 +86,17 @@ class _BaseCustomEmailHandler(Handler):
 
             self._write_zip(zip_path, copy_dest)
             return zip_path, copy_dest
+        return None, None
 
     @staticmethod
     def _cleanup_logfile_zip(dir_path: Union[Path, str], zip_to_attach: Union[Path, str]):
-        rmtree(dir_path, ignore_errors=True)
-        zip_to_attach.unlink(missing_ok=True)
+        try:
+            if isinstance(zip_to_attach, str):
+                zip_to_attach: Path = Path(zip_to_attach)
+            rmtree(dir_path, ignore_errors=True)
+            zip_to_attach.unlink(missing_ok=True)
+        except (ValueError, TypeError, AttributeError):
+            pass
 
 
 class OutlookEmailHandler(_BaseCustomEmailHandler):
@@ -122,19 +130,21 @@ class OutlookEmailHandler(_BaseCustomEmailHandler):
         except UnboundLocalError as e:
             self._use_error_template(e)
         finally:
-            try:
-                self.email_msg.Attachments.Clear()
-            except Exception as e:
-                self._use_error_template(e)
-            finally:
+            if not getattr(self.email_msg, 'send_success', False):
                 try:
-                    self.email_msg.Send()
+                    self.email_msg.Attachments.Clear()
                 except Exception as e:
                     self._use_error_template(e)
+                finally:
+                    try:
+                        self.email_msg.Send()
+                    except Exception as e:
+                        self._use_error_template(e)
 
     def _send_and_cleanup_attachments(self, copy_dir_path, zip_to_attach, **kwargs):
         try:
             self.email_msg.Send()
+            setattr(self.email_msg, 'send_success', True)
             self._cleanup_logfile_zip(copy_dir_path, zip_to_attach)
         except Exception as e:
             self._use_error_template(e, **kwargs)
