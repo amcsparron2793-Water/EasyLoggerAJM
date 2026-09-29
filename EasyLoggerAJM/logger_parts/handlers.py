@@ -94,7 +94,7 @@ class _BaseCustomEmailHandler(Handler):
             if isinstance(zip_to_attach, str):
                 zip_to_attach: Path = Path(zip_to_attach)
             rmtree(dir_path, ignore_errors=True)
-            zip_to_attach.unlink(missing_ok=True)
+            zip_to_attach.with_suffix('.zip').unlink(missing_ok=True)
         except (ValueError, TypeError, AttributeError):
             pass
 
