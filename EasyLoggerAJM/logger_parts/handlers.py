@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import deque
 from logging import Handler, StreamHandler
 from logging.handlers import TimedRotatingFileHandler
